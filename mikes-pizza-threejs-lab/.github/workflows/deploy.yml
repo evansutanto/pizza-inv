@@ -1,0 +1,62 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Build static site
+        env:
+          VITE_BASE_PATH: ${{ vars.VITE_BASE_PATH }}
+          CUSTOM_DOMAIN: ${{ vars.CUSTOM_DOMAIN }}
+          REPOSITORY_NAME: ${{ github.event.repository.name }}
+        run: |
+          if [ -z "$VITE_BASE_PATH" ]; then
+            if [ -n "$CUSTOM_DOMAIN" ]; then
+              export VITE_BASE_PATH=/
+            else
+              export VITE_BASE_PATH="/$REPOSITORY_NAME/"
+            fi
+          fi
+          npm run build
+          if [ -n "$CUSTOM_DOMAIN" ]; then
+            case "$CUSTOM_DOMAIN" in
+              *[!a-zA-Z0-9.-]*|.*|*.) echo 'CUSTOM_DOMAIN must be a plain hostname without scheme, path, or whitespace.' >&2; exit 1 ;;
+            esac
+            printf '%s\n' "$CUSTOM_DOMAIN" > dist/CNAME
+          fi
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
