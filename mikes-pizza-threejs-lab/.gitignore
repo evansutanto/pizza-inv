@@ -1,8 +1,0 @@
-/node_modules/
-/dist/
-/dist-subpath/
-/test-results/
-/playwright-report/
-*.log
-*.local
-.DS_Store
