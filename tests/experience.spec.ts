@@ -67,9 +67,9 @@ async function phase(page: Page, expected: string, timeout = 10000) {
 async function open(page: Page, path = '/') {
   await page.goto(path);
   await phase(page, 'exterior');
-  await expect.poll(() => page.evaluate(() => document.fonts.check('400 16px LocalCondensed')),
-    { message: 'The locally bundled condensed font has loaded' }).toBe(true);
-  expect(await page.evaluate(() => [...document.fonts].some(face => face.family === 'LocalCondensed' && face.status === 'loaded'))).toBe(true);
+  await expect.poll(() => page.evaluate(() => document.fonts.check('500 16px "Helvetica Neue"')),
+    { message: 'The locally bundled medium font has loaded' }).toBe(true);
+  expect(await page.evaluate(() => [...document.fonts].some(face => face.family.replace(/['"]/g, '') === 'Helvetica Neue' && face.status === 'loaded'))).toBe(true);
 }
 
 async function enter(page: Page) {

@@ -146,8 +146,8 @@ export function createExterior(): ExteriorScene {
   box(group, [7.2, .07, .12], [-2.4, 2.98, .1], iron);
   const windowDecal = canvasTexture(1024, 512, (ctx, w, h) => {
     ctx.textAlign = 'center'; ctx.fillStyle = '#fff0cc';
-    ctx.font = '700 66px Georgia, serif'; ctx.fillText('HOT SLICES', w / 2, h * .36);
-    ctx.font = '32px Georgia, serif'; ctx.fillText('GOOD COMPANY. LATE NIGHTS.', w / 2, h * .48);
+    ctx.font = '700 66px "Helvetica Neue", Helvetica, Arial, sans-serif'; ctx.fillText('HOT SLICES', w / 2, h * .36);
+    ctx.font = '500 32px "Helvetica Neue", Helvetica, Arial, sans-serif'; ctx.fillText('GOOD COMPANY. LATE NIGHTS.', w / 2, h * .48);
     ctx.strokeStyle = '#f4d5a0'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(w * .2, h * .57); ctx.lineTo(w * .8, h * .57); ctx.stroke();
   });
   const decal = new THREE.Mesh(new THREE.PlaneGeometry(4.3, 2.15), new THREE.MeshBasicMaterial({ map: windowDecal, transparent: true, toneMapped: false, opacity: .7 })); decal.position.set(-2.5, 1.98, .14); group.add(decal);
@@ -174,7 +174,7 @@ export function createExterior(): ExteriorScene {
   box(group, [10.42, .035, .05], [-.55, 4.6, .61], orange);
   box(group, [10.42, .035, .05], [-.55, 3.66, .61], orange);
   const signMap = canvasTexture(2048, 256, (ctx, w, h) => {
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '900 230px LocalCondensed, Impact, Arial Black, sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '700 230px "Helvetica Neue", Helvetica, Arial, sans-serif';
     ctx.shadowColor = '#ff5e16'; ctx.shadowBlur = 22; ctx.strokeStyle = '#ff6d22'; ctx.lineWidth = 6;
     ctx.strokeText("MIKE'S PIZZA", w / 2, h * .54, w * .92);
     ctx.shadowBlur = 8; ctx.fillStyle = '#ffad55'; ctx.fillText("MIKE'S PIZZA", w / 2, h * .54, w * .92);
@@ -208,9 +208,9 @@ export function createExterior(): ExteriorScene {
   label(group, 'PIZZA • PASTA • FRIENDS', 2.45, .27, [5.08, 2.9, .15], { color: '#d2bb8e' });
   const menuMap = canvasTexture(512, 768, (ctx, w, h) => {
     ctx.fillStyle = '#e0cfaa'; ctx.fillRect(0, 0, w, h); ctx.fillStyle = '#783021'; ctx.textAlign = 'center';
-    ctx.font = '900 70px LocalCondensed, Impact, sans-serif'; ctx.fillText('A GOOD', w / 2, 143); ctx.fillText('NIGHT FOR', w / 2, 224); ctx.fillText('A SLICE.', w / 2, 305);
+    ctx.font = '700 70px "Helvetica Neue", Helvetica, Arial, sans-serif'; ctx.fillText('A GOOD', w / 2, 143); ctx.fillText('NIGHT FOR', w / 2, 224); ctx.fillText('A SLICE.', w / 2, 305);
     ctx.strokeStyle = '#813f2d'; ctx.lineWidth = 4; ctx.strokeRect(25, 25, w - 50, h - 50);
-    ctx.font = '120px Georgia'; ctx.fillText('✦', w / 2, 490); ctx.font = '28px Georgia'; ctx.fillText("MIKE'S PIZZA", w / 2, 620);
+    ctx.font = '120px Georgia'; ctx.fillText('✦', w / 2, 490); ctx.font = '500 28px "Helvetica Neue", Helvetica, Arial, sans-serif'; ctx.fillText("MIKE'S PIZZA", w / 2, 620);
   });
   box(group, [2.1, 2.45, .06], [5.15, 1.55, .14], wood);
   const menu = new THREE.Mesh(new THREE.PlaneGeometry(1.92, 2.3), material('#dddddd', { map: menuMap })); menu.position.set(5.15, 1.55, .18); group.add(menu);

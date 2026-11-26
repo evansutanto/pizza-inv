@@ -36,7 +36,6 @@ export class Overlays {
         <button class="button button-orange" id="enter">TAP TO ENTER <span aria-hidden="true">+</span></button>
       </section>
       <section class="kitchen-panel" aria-label="Pizza preparation" hidden>
-        <div class="prep-caption"><span class="eyebrow">FRESH FROM YOUR HANDS</span><h1>Make a little magic.</h1></div>
         <div class="prep-instruction"><div class="step-info"><h2 id="instruction">Drag the dough onto the board.</h2><span class="tap-progress" aria-label="Flattening progress"></span></div><button class="button button-red" id="step-action">Place the dough</button><button class="button button-red" id="bake" disabled hidden>CLICK TO BAKE <span aria-hidden="true">+</span></button></div>
       </section>
       <section class="invitation-panel" aria-label="Invitation" hidden>

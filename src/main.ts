@@ -9,10 +9,11 @@ const experience=new ExperienceController(ui);
 // Let the lightweight loading screen paint before generating procedural textures.
 let fontDeadline=0;
 requestAnimationFrame(()=>{
-  // One local 12 kB face keeps HTML and in-world type consistent on phones.
-  // A failed/slow optional font falls back without blocking the invitation.
+  // Load all three local weights before generating HTML and in-world type.
+  // Failed/slow optional fonts fall back without blocking the invitation.
   const timeout=new Promise<void>(resolve=>{fontDeadline=window.setTimeout(resolve,1500);});
-  void Promise.race([document.fonts.load('400 16px LocalCondensed').catch(()=>[]),timeout]).then(()=>{
+  const fonts=Promise.all([400,500,700].map(weight=>document.fonts.load(`${weight} 16px "Helvetica Neue"`).catch(()=>[])));
+  void Promise.race([fonts,timeout]).then(()=>{
     clearTimeout(fontDeadline);experience.initialize();
   });
 });

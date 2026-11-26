@@ -69,14 +69,14 @@ export function createInvitation() {
     ctx.fillStyle='#f7eac9';ctx.fillRect(0,0,w,h);
     ctx.strokeStyle='#b43623';ctx.lineWidth=14;ctx.strokeRect(37,37,w-74,h-74);
     ctx.fillStyle='#b43623';ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.font='600 46px monospace';ctx.fillText('THE OFFICIAL INVITATION',w/2,135);
+    ctx.font='500 46px "Helvetica Neue", Helvetica, Arial, sans-serif';ctx.fillText('THE OFFICIAL INVITATION',w/2,135);
     ctx.fillRect(120,205,w-240,4);
-    ctx.font='italic 900 196px LocalCondensed, Impact, Arial Narrow, sans-serif';ctx.fillText('MIKE’S',w/2,360);
-    ctx.font='900 181px LocalCondensed, Impact, Arial Narrow, sans-serif';ctx.fillText('PIZZA PARTY',w/2,550,w-130);
+    ctx.font='700 196px "Helvetica Neue", Helvetica, Arial, sans-serif';ctx.fillText('MIKE’S',w/2,360);
+    ctx.font='700 181px "Helvetica Neue", Helvetica, Arial, sans-serif';ctx.fillText('PIZZA PARTY',w/2,550,w-130);
     ctx.fillRect(120,680,w-240,4);
-    ctx.font='700 53px monospace';ctx.fillText(CONFIG.date.toUpperCase(),w/2,770,w-150);
-    ctx.font='900 127px LocalCondensed, Impact, sans-serif';ctx.fillText(CONFIG.time,w/2,900);
-    if(CONFIG.venue){ctx.font='40px sans-serif';ctx.fillText(CONFIG.venue,w/2,1015,w-130);}
+    ctx.font='500 53px "Helvetica Neue", Helvetica, Arial, sans-serif';ctx.fillText(CONFIG.date.toUpperCase(),w/2,770,w-150);
+    ctx.font='700 127px "Helvetica Neue", Helvetica, Arial, sans-serif';ctx.fillText(CONFIG.time,w/2,900);
+    if(CONFIG.venue){ctx.font='500 40px "Helvetica Neue", Helvetica, Arial, sans-serif';ctx.fillText(CONFIG.venue,w/2,1015,w-130);}
     // Thin scan lines are a texture detail, not a full-screen flashing effect.
     ctx.fillStyle='rgba(57,46,18,.035)';for(let y=0;y<h;y+=6)ctx.fillRect(0,y,w,1);
   });
@@ -108,12 +108,12 @@ export function createInvitation() {
     const firstDay=new Date(Date.UTC(year,date.getUTCMonth(),1)).getUTCDay();
     const days=new Date(Date.UTC(year,date.getUTCMonth()+1,0)).getUTCDate();
     ctx.fillStyle='#f7edce';ctx.fillRect(0,0,w,h);ctx.fillStyle='#b93d25';ctx.fillRect(0,0,w,160);
-    ctx.fillStyle='#fff0ce';ctx.textAlign='center';ctx.font='900 102px LocalCondensed, Impact, sans-serif';ctx.fillText(month,w/2,115,w-40);
-    ctx.fillStyle='#a03924';ctx.font='700 25px monospace';ctx.fillText('S   M   T   W   T   F   S',w/2,220);
-    ctx.font='700 39px monospace';for(let d=1;d<=days;d++){const cell=d-1+firstDay,col=cell%7,row=Math.floor(cell/7);ctx.fillText(String(d),52+col*89,300+row*88);}
+    ctx.fillStyle='#fff0ce';ctx.textAlign='center';ctx.font='700 102px "Helvetica Neue", Helvetica, Arial, sans-serif';ctx.fillText(month,w/2,115,w-40);
+    ctx.fillStyle='#a03924';ctx.font='500 25px "Helvetica Neue", Helvetica, Arial, sans-serif';['S','M','T','W','T','F','S'].forEach((day,col)=>ctx.fillText(day,52+col*89,220));
+    ctx.font='500 39px "Helvetica Neue", Helvetica, Arial, sans-serif';for(let d=1;d<=days;d++){const cell=d-1+firstDay,col=cell%7,row=Math.floor(cell/7);ctx.fillText(String(d),52+col*89,300+row*88);}
     const selected=day-1+firstDay;
     ctx.strokeStyle='#ce3f20';ctx.lineWidth=8;ctx.beginPath();ctx.ellipse(52+(selected%7)*89,287+Math.floor(selected/7)*88,44,47,-.15,0,Math.PI*2);ctx.stroke();
-    ctx.font='700 25px monospace';ctx.fillText(`SAVE THE NIGHT • ${year}`,w/2,728);
+    ctx.font='500 25px "Helvetica Neue", Helvetica, Arial, sans-serif';ctx.fillText(`SAVE THE NIGHT • ${year}`,w/2,728);
   });
   const cal=new THREE.Mesh(new THREE.PlaneGeometry(2.85,3.25),new THREE.MeshBasicMaterial({map:calTexture}));cal.position.z=.037;calendar.add(cal);
   for(const x of [-1.1,-.55,0,.55,1.1]){const ring=new THREE.Mesh(new THREE.TorusGeometry(.07,.017,5,10),dark);ring.position.set(x,1.62,.07);calendar.add(ring);}

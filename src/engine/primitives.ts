@@ -31,7 +31,7 @@ export function label(parent: THREE.Object3D, text: string, width: number, heigh
     ctx.fillStyle = options.background || '#00000000'; ctx.fillRect(0, 0, w, h);
     ctx.fillStyle = options.color || '#fff2d6';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = options.font || `900 ${Math.round(h * 0.74)}px LocalCondensed, Impact, 'Arial Narrow', sans-serif`;
+    ctx.font = options.font || `700 ${Math.round(h * 0.74)}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
     if (options.glow) { ctx.shadowColor = options.color || '#ff6b25'; ctx.shadowBlur = 14; }
     ctx.fillText(text, w / 2, h * 0.52, w * 0.94);
   });
