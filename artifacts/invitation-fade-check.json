@@ -1,0 +1,36 @@
+{
+  "initial": {
+    "pizzaStarted": false,
+    "pizzaSettled": false,
+    "pizzaX": -6,
+    "elapsed": -0.0013999999999996361
+  },
+  "phaseChanges": [
+    {
+      "phase": "baking",
+      "opacity": 0,
+      "height": 725,
+      "transform": "none"
+    },
+    {
+      "phase": "invitation",
+      "opacity": 0.995609,
+      "height": 725,
+      "transform": "none"
+    }
+  ],
+  "fadeOutSamples": 11,
+  "fadeInSamples": 21,
+  "maxOpacity": 1,
+  "fullHeight": true,
+  "audio": {
+    "bell": 1,
+    "doughDrop": 1,
+    "doughHit": 3,
+    "sauceDrop": 1,
+    "cheeseDrop": 1,
+    "whoosh": 1,
+    "ovenDone": 1
+  },
+  "errors": []
+}

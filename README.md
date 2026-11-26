@@ -35,11 +35,11 @@ Playwright needs its browser binary installed. Browser tests are local checks; G
 
 - Activate **Click / Tap to Enter** with a pointer, touch, or keyboard. The camera physically travels through the opening door into the shop, then rises above the worktop. The exterior and kitchen share continuous world coordinates; there is no image-scaling transition or hidden scene cut during entry.
 - Drag the dough to the target, tap it exactly three times, then add sauce and cheese in order. Large tap/keyboard action controls provide an alternative to precise dragging. Invalid targets do not advance a step.
-- Bake unlocks only when the pizza is complete. The pizza moves right, then a short CRT transition reveals the invitation.
+- Bake unlocks only when the pizza is complete. The pizza moves right, then a brief fade through white reveals the invitation. The cover stays opaque until the invitation has rendered; CSS handles the fades while WebGL rests.
 - The open invitation box begins empty. A separate pizza model starts moving left-to-right into it approximately three seconds after the invitation opens.
 - **View invite** bypasses the game, and **Replay** starts a new run. Reaching the invitation does not automatically reset progress.
 - Reduced-motion preferences shorten camera movement and transitions and remove flashing. The page supplies readable HTML invitation details and useful fallback content when WebGL cannot start or its context is lost.
-- **Sound On** enables the optional soundscape; **Mute** stops it. Rain plays outside, then fades into shop music. Pickups, drops, dough taps, the door bell, invitation whoosh, and pizza-arrival ding follow actual game events. Sound starts only after explicit activation and pauses in background tabs.
+- Sound is enabled by default; **Mute** stops it. The audio engine is initialized when the experience loads, and browser autoplay rules gate playback until a sound-capable gesture such as entering or tapping the scene. Rain plays outside, then fades into shop music. Pickups, drops, dough taps, the door bell, invitation whoosh, and pizza-arrival ding follow actual game events. Playback pauses in background tabs.
 
 ## Sound effects and music
 
@@ -47,7 +47,7 @@ The project includes **12 original synthesized WAV placeholders**, including rai
 
 To use your own audio, drop matching MP3 files into **`src/assets/audio/`**, alongside its README. For example, `rain.mp3` replaces the outside ambience, and `shop-music.mp3` replaces the background music. Vite automatically selects replacements at build time and preserves generated fallbacks for any sounds you have not supplied. Refresh/restart development or rebuild/redeploy GitHub Pages after adding files. See the [complete filename list and replacement guide](src/assets/audio/README.md).
 
-Mix levels live in `src/app/Config.ts` under `audio`. The generated pack can be recreated with `python3 scripts/generate-audio.py`. Audio payloads are lazy: nothing is downloaded/decoded until Sound On is selected. Native gain automation crossfades the two streaming ambience/music elements; short effects are cached with at most six simultaneous voices. Muting and hiding the page stop playback and suspend the audio context. No separate JavaScript audio animation loop runs.
+Mix levels live in `src/app/Config.ts` under `audio`. The generated pack can be recreated with `python3 scripts/generate-audio.py`. The audio graph is initialized at startup, while audio files remain lazy: nothing is downloaded or decoded until the first user gesture starts playback. Native gain automation crossfades the two streaming ambience/music elements; short effects are cached with at most six simultaneous voices. Muting and hiding the page pause playback while leaving the engine initialized. No separate JavaScript audio animation loop runs.
 
 The activation behavior follows [browser autoplay rules](https://developer.chrome.com/blog/autoplay), and replacement discovery uses [Vite's file-glob imports](https://vite.dev/guide/features.html#glob-import). Optional files are not probed over the network, so absent MP3s do not generate 404s.
 
@@ -62,6 +62,7 @@ Change `src/app/Config.ts`:
 | `venue` | Optional venue; empty means it is omitted |
 | `rsvpUrl` | Optional real external RSVP destination; empty means no working RSVP link is advertised |
 | `entranceDuration`, `bakeDuration` | Camera/game transition timing in seconds |
+| `inviteFadeOutDuration`, `inviteFadeInDuration` | White fade timing in seconds |
 | `invitationPizzaDelay`, `invitationPizzaDuration` | Delayed pizza arrival and duration in seconds |
 | `reducedTransitionDuration` | Short transition duration for reduced motion |
 
@@ -147,7 +148,9 @@ Verified on 25 November 2026:
 - All three scenes were checked at **390×844, 360×800, 844×390, 768×1024, and 1440×900**. Ingredient centers remained within the canvas, primary controls were visible, and the document had no overflow. Landscape cards leave the dough and open pizza box visible.
 - Browser audit recorded **no console errors/exceptions, missing assets, or external runtime requests**. Screenshots and the HTML report are generated under `test-results/` and `playwright-report/`; selected screenshots are retained in `artifacts/`.
 
-Audio update verified on **26 November 2026** with a production build and one focused Chromium playthrough: no audio payloads/context before opt-in; outside rain playback; music after entry; door bell, all three ingredient pickup/drop pairs, exactly three dough hits, transition whoosh, arrival ding; and mute stopping playback. No console errors or missing audio files occurred. Generated PCM files were checked for non-silence and clipping. Physical iOS/Android audio behavior and subjective listening on the owner's speakers remain unverified. No new unit-test suite was added for this change.
+The earlier opt-in audio build was verified on **26 November 2026** with a production build and one focused Chromium playthrough: no audio payloads/context before the first user gesture; outside rain playback; music after entry; door bell, all three ingredient pickup/drop pairs, exactly three dough hits, transition whoosh, arrival ding; and mute stopping playback. No console errors or missing audio files occurred. Generated PCM files were checked for non-silence and clipping. Physical iOS/Android audio behavior and subjective listening on the owner's speakers remain unverified. No new unit-test suite was added for this change.
+
+Invitation layout/fade update verified on **26 November 2026** with a production build and a focused software-rendered Chromium playthrough. The TV and books now share a support assembly, and the camera fits the TV, books, calendar and complete box into the space clear of the HTML invitation card. Screenshots checked at **417×725, 360×800, 390×844, 844×390 and 1440×900** showed the props and card without viewport overflow. The fade recorded intermediate opacity in both directions and reached full-screen white; reduced motion skipped it. The box remained empty on reveal, then received the pizza, with one whoosh and one oven ding. No browser errors occurred. These checks emulate viewport sizes; physical phone rendering remains unverified. No new unit tests were added.
 
 The additional `tests/production-check.mjs` **passed against both final production builds**: `/` and `/mikes-pizza-threejs-lab/`, including their local font paths, full button-driven recipe, delayed pizza and JavaScript-disabled fallback. It also rejected Three.js compatibility warnings; none occurred. It saved software-rendered benchmark reports and production screenshots in `artifacts/`. The empty-box delay starts after the first CRT render so initial shader work cannot shorten the visible pause. To repeat with previews already running:
 

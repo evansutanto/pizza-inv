@@ -18,6 +18,8 @@ export class Overlays {
   private live:HTMLElement;
   private instruction:HTMLElement;
   private taps:HTMLElement;
+  private shutter:HTMLElement;
+  private finishFade?:()=>void;
   private actionLabels:Record<string,string>={move:'Place the dough',flatten:'Flatten dough',sauce:'Add tomato sauce',cheese:'Add cheese',ready:'Pizza ready'};
 
   constructor(parent:HTMLElement) {
@@ -41,7 +43,7 @@ export class Overlays {
         <div class="invite-ticket"><div class="ticket-heading"><span class="ticket-star" aria-hidden="true">✦</span><div><strong>MIKE’S PIZZA PARTY</strong><p>${CONFIG.date.toUpperCase()}<span> ${CONFIG.time}</span></p><p class="venue-line"></p></div></div><div class="ticket-actions"><a class="button button-red rsvp" hidden>Save me a slice</a><button class="text-button" id="replay">Replay experience</button></div></div>
       </section>
       <section class="fallback-panel" aria-label="Invitation fallback" hidden><span class="eyebrow">YOU’RE INVITED</span><h1>Mike’s<br><em>Pizza Party.</em></h1><p class="fallback-date">${CONFIG.date}<br><strong>${CONFIG.time}</strong></p><p class="fallback-venue"></p><p class="fallback-reason">The 3D kitchen is taking a break. The party is still on.</p><a class="button button-red fallback-rsvp" hidden>Save me a slice</a><button class="text-button" id="retry">Try 3D again</button></section>
-      <footer class="scene-footer"><button class="text-button view-invite">View invitation</button><div class="experience-controls"><button class="sound-button" type="button" aria-label="Enable sound" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5Z" stroke-linejoin="round"/><path d="M15 8a6 6 0 0 1 0 8M18 5a10 10 0 0 1 0 14" stroke-linecap="round"/></svg><span>SOUND ON</span></button><button class="motion-button" aria-label="Reduce motion" aria-pressed="false">LESS MOTION</button></div></footer>
+      <footer class="scene-footer"><button class="text-button view-invite">View invitation</button><div class="experience-controls"><button class="sound-button" type="button" aria-label="Mute sound" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5Z" stroke-linejoin="round"/><path d="M15 8a6 6 0 0 1 0 8M18 5a10 10 0 0 1 0 14" stroke-linecap="round"/></svg><span>MUTE</span></button><button class="motion-button" aria-label="Reduce motion" aria-pressed="false">LESS MOTION</button></div></footer>
       <p class="sr-only live-instruction" aria-live="polite" aria-atomic="true"></p>
     `;
     parent.append(this.root);
@@ -52,6 +54,7 @@ export class Overlays {
     this.sound=this.root.querySelector('.sound-button')!;
     this.live=this.root.querySelector('.live-instruction')!;this.instruction=this.root.querySelector('#instruction')!;
     this.taps=this.root.querySelector('.tap-progress')!;
+    this.shutter=this.root.querySelector('.shutter')!;
     this.doughDragHint=new DoughDragHint(this.root);
     if(CONFIG.venue){this.root.querySelector('.venue-line')!.textContent=CONFIG.venue;this.root.querySelector('.fallback-venue')!.textContent=CONFIG.venue;}
     this.root.querySelector<HTMLButtonElement>('#retry')!.addEventListener('click',()=>location.reload());
@@ -92,6 +95,32 @@ export class Overlays {
   soundState(enabled:boolean){this.sound.setAttribute('aria-pressed',String(enabled));this.sound.setAttribute('aria-label',enabled?'Mute sound':'Enable sound');this.sound.querySelector('span')!.textContent=enabled?'MUTE':'SOUND ON';}
   announce(message:string){this.live.textContent=message;}
   hint(message?:string){if(message)this.announce(message);}
-  flash(active:boolean){this.root.classList.toggle('is-transitioning',active);}
-  dispose(){this.root.remove();}
+  invitationFrame(){
+    const width=this.canvas.clientWidth,height=this.canvas.clientHeight;
+    const header=this.root.querySelector<HTMLElement>('.masthead')!.getBoundingClientRect();
+    const ticket=this.root.querySelector<HTMLElement>('.invite-ticket')!.getBoundingClientRect();
+    const footer=this.root.querySelector<HTMLElement>('.scene-footer')!.getBoundingClientRect();
+    const landscapeCard=width>height&&height<=600;
+    return {width,height,left:landscapeCard?ticket.right+18:18,right:width-18,
+      top:header.bottom+16,bottom:landscapeCard?footer.top-12:ticket.top-16};
+  }
+  fadeToWhite(active:boolean,duration:number){
+    this.finishFade?.();
+    return new Promise<void>(resolve=>{
+      let timer=0;
+      const finish=()=>{
+        clearTimeout(timer);this.shutter.removeEventListener('transitionend',onEnd);
+        if(this.finishFade===finish)this.finishFade=undefined;
+        resolve();
+      };
+      const onEnd=(event:TransitionEvent)=>{if(event.target===this.shutter&&event.propertyName==='opacity')finish();};
+      this.finishFade=finish;
+      this.shutter.addEventListener('transitionend',onEnd);
+      this.shutter.style.transitionDuration=`${duration*1000}ms`;
+      this.root.classList.toggle('is-transitioning',active);
+      if(duration<=0)finish();else timer=window.setTimeout(finish,duration*1000+80);
+    });
+  }
+  clearFade(){this.finishFade?.();this.shutter.style.transitionDuration='0ms';this.root.classList.remove('is-transitioning');}
+  dispose(){this.clearFade();this.root.remove();}
 }

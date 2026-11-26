@@ -8,9 +8,12 @@ interface LoopChannel {
   gain: GainNode;
   target: number;
   pauseTimer: number;
+  url: string;
+  fallback: string;
+  usedFallback: boolean;
 }
 
-/** Lazy, opt-in sound. Native gain automation handles fades; no audio render loop. */
+/** Eager audio graph, enabled by default; browser playback starts on first gesture. */
 export class Soundscape {
   private context?: AudioContext;
   private master?: GainNode;
@@ -22,40 +25,29 @@ export class Soundscape {
   private played: Partial<Record<EffectId, number>> = {};
   private lastCue: EffectId | null = null;
   private phase: ExperiencePhase = 'loading';
-  private enabled = false;
+  private enabled = true;
+  private activated = false;
   private hidden = false;
   private disposed = false;
   private generation = 0;
 
-  constructor(private onChange: (enabled: boolean) => void) {}
+  constructor(private onChange: (enabled: boolean) => void) {
+    this.onChange(true);
+    try { this.prepare(); } catch {}
+  }
 
   toggle() {
     if (this.disposed) return;
     if (this.enabled) { this.mute(); return; }
-    try {
-      this.prepare();
-      if (!this.context || !this.master) return;
-      this.enabled = true; this.generation++;
-      this.master.gain.setValueAtTime(CONFIG.audio.masterVolume, this.context.currentTime);
-      // Called directly by the Sound On gesture, including priming both media
-      // elements silently for browsers that require an initial user activation.
-      void this.context.resume().catch(() => this.mute());
-      for (const loop of Object.values(this.loops)) {
-        void loop.media.play().then(() => {
-          if (!this.enabled || this.hidden || loop.target === 0) loop.media.pause();
-        }).catch(() => {});
-      }
-      this.syncLoops();
-      this.onChange(true);
-      for (const id of Object.keys(AUDIO_NAMES) as AudioId[]) {
-        if (id !== 'rain' && id !== 'music') void this.buffer(id);
-      }
-    } catch { this.mute(); }
+    this.enabled = true;
+    this.onChange(true);
+    this.activate();
   }
 
   unlock() {
-    if (!this.enabled || this.hidden || !this.context) return;
-    if (this.context.state === 'suspended') void this.context.resume().then(() => this.syncLoops()).catch(() => {});
+    if (!this.enabled || this.hidden || this.disposed) return;
+    if (!this.activated) { this.activate(); return; }
+    if (this.context?.state === 'suspended') void this.context.resume().then(() => this.syncLoops()).catch(() => {});
   }
 
   setPhase(phase: ExperiencePhase) { this.phase = phase; this.syncLoops(); }
@@ -65,8 +57,7 @@ export class Soundscape {
     if (hidden) {
       this.generation++;
       this.pauseLoops(); this.stopVoices();
-      void this.context?.suspend().catch(() => {});
-    } else if (this.enabled) {
+    } else if (this.enabled && this.activated) {
       this.unlock(); this.syncLoops();
     }
   }
@@ -107,22 +98,43 @@ export class Soundscape {
     this.effects = this.context.createGain(); this.effects.gain.value = CONFIG.audio.effectsVolume; this.effects.connect(this.master);
     for (const id of ['rain', 'music'] as const) {
       const asset = audioAsset(id), media = new Audio();
-      media.loop = true; media.preload = 'none'; media.src = asset.url;
+      media.loop = true; media.preload = 'none';
       const source = this.context.createMediaElementSource(media), gain = this.context.createGain();
       gain.gain.value = 0; source.connect(gain); gain.connect(this.master);
-      const channel: LoopChannel = { media, source, gain, target: 0, pauseTimer: 0 };
-      let usedFallback = !asset.custom;
+      const channel: LoopChannel = { media, source, gain, target: 0, pauseTimer: 0,
+        url: asset.url, fallback: asset.fallback, usedFallback: !asset.custom };
       media.onerror = () => {
-        if (usedFallback || this.disposed) return;
-        usedFallback = true; media.src = asset.fallback;
+        if (channel.usedFallback || this.disposed) return;
+        channel.usedFallback = true; media.src = channel.fallback;
         if (this.enabled && !this.hidden && channel.target > 0) void media.play().catch(() => {});
       };
       this.loops[id] = channel;
     }
   }
 
+  private activate() {
+    if (this.disposed || !this.enabled || this.hidden) return;
+    try {
+      this.prepare();
+      if (!this.context || !this.master) return;
+      const firstActivation = !this.activated;
+      this.activated = true;
+      this.generation++;
+      this.master.gain.setValueAtTime(CONFIG.audio.masterVolume, this.context.currentTime);
+      // This runs in the user's click, tap, or keyboard activation so browsers
+      // that block autoplay allow the active scene's loop and effects to start.
+      void this.context.resume().catch(() => this.mute());
+      this.syncLoops();
+      if (firstActivation) {
+        for (const id of Object.keys(AUDIO_NAMES) as AudioId[]) {
+          if (id !== 'rain' && id !== 'music') void this.buffer(id);
+        }
+      }
+    } catch { this.mute(); }
+  }
+
   private syncLoops() {
-    if (!this.enabled || this.hidden || !this.context) return;
+    if (!this.enabled || !this.activated || this.hidden || !this.context) return;
     const outside = this.phase === 'exterior';
     const inside = ['entering', 'kitchen', 'baking', 'invitation'].includes(this.phase);
     this.fade('rain', outside ? CONFIG.audio.rainVolume : 0);
@@ -136,7 +148,10 @@ export class Soundscape {
     const now = this.context.currentTime, gain = channel.gain.gain;
     const current = gain.value; gain.cancelScheduledValues(now); gain.setValueAtTime(current, now);
     gain.linearRampToValueAtTime(target, now + CONFIG.audio.crossfadeSeconds);
-    if (target > 0) void channel.media.play().catch(() => {});
+    if (target > 0) {
+      if (!channel.media.hasAttribute('src')) channel.media.src = channel.url;
+      void channel.media.play().catch(() => {});
+    }
     else channel.pauseTimer = window.setTimeout(() => {
       if (channel.target === 0) channel.media.pause();
     }, CONFIG.audio.crossfadeSeconds * 1000 + 50);
@@ -176,7 +191,6 @@ export class Soundscape {
   private mute() {
     this.enabled = false; this.generation++; this.pauseLoops(); this.stopVoices();
     if (this.master) this.master.gain.value = 0;
-    void this.context?.suspend().catch(() => {});
     this.onChange(false);
   }
 
@@ -185,7 +199,7 @@ export class Soundscape {
       const channel = this.loops[id];
       return { playing: channel ? !channel.media.paused : false, time: channel?.media.currentTime || 0, targetVolume: channel?.target || 0 };
     };
-    return { enabled: this.enabled, contextState: this.context?.state || 'not-created',
+    return { enabled: this.enabled, activated: this.activated, contextState: this.context?.state || 'not-created',
       rain: loop('rain'), music: loop('music'), voices: this.voices.size,
       played: { ...this.played }, lastCue: this.lastCue,
       assets: Object.fromEntries((Object.keys(AUDIO_NAMES) as AudioId[]).map(id => [id, audioAsset(id).custom ? 'custom' : 'generated'])) };

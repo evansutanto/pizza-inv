@@ -57,19 +57,26 @@ export function createInvitation() {
   box(group,[16,.27,7],[0,.3,1.4],material('#ffffff',{map:wood,roughness:.67}));
   box(group,[16,.07,.09],[0,.46,4.85],material('#e4b97c'));
 
-  const tv = new THREE.Group(); tv.position.set(-1.65,2.6,.15); tv.rotation.y=.04;group.add(tv);
+  // Keep the TV and its support in one assembly so responsive scaling cannot
+  // drive the casing through the books or leave the stack floating.
+  const tvStand = new THREE.Group();tvStand.position.set(-1.65,.435,.15);group.add(tvStand);
+  const tv = new THREE.Group();tv.position.set(0,2.95,0);tv.rotation.y=.04;tvStand.add(tv);
   // Three independent books, with visible paper leaves and printed spines.
-  const books = new THREE.Group();books.position.set(-1.65,0.47,.15);group.add(books);
+  const books = new THREE.Group();tvStand.add(books);
+  const paperTexture=canvasTexture(256,128,(ctx,w,h)=>{
+    ctx.fillStyle='#e9dbba';ctx.fillRect(0,0,w,h);ctx.fillStyle='#b8a885';
+    for(let y=6;y<h;y+=7)ctx.fillRect(0,y,w,1);
+  });
+  const paper=material('#ffffff',{map:paperTexture,roughness:.95});
   const bookColors=['#293e3b','#d5a442','#a92f20'];
   for(let i=0;i<3;i++){
-    const book=new THREE.Group();book.position.y=.16+i*.28;book.rotation.y=[-.05,.055,-.025][i];books.add(book);
+    const book=new THREE.Group();book.position.y=.15+i*.3;book.rotation.y=[-.05,.055,-.025][i];books.add(book);
     const bw=[5.25,5.0,4.7][i],bd=[2.6,2.75,2.5][i];
     const cover=material(bookColors[i]);
-    box(book,[bw,.045,bd],[0,-.12,0],cover);box(book,[bw,.045,bd],[0,.12,0],cover);
-    box(book,[bw-.13,.2,bd-.13],[0,0,0],cream);
-    box(book,[bw,.23,.09],[0,0,bd/2],cover);
-    label(book,['NEW YORK • AFTER HOURS','THE ART OF DOING NOTHING','A VERY GOOD NIGHT'][i],bw-.35,.11,[0,0,bd/2+.05],{color:i===1?'#51371c':'#f1d8a2'});
-    for(let j=0;j<4;j++)box(book,[bw-.2,.007,.01],[0,-.075+j*.045,bd/2-.01],material('#bda780'));
+    box(book,[bw,.03,bd],[0,-.135,0],cover);box(book,[bw,.03,bd],[0,.135,0],cover);
+    box(book,[bw-.13,.24,bd-.13],[0,0,0],paper);
+    box(book,[bw,.24,.07],[0,0,bd/2-.02],cover);
+    label(book,['NEW YORK • AFTER HOURS','THE ART OF DOING NOTHING','A VERY GOOD NIGHT'][i],bw-.35,.11,[0,0,bd/2+.022],{color:i===1?'#51371c':'#f1d8a2'});
   }
   // Deep rounded plastic enclosure, vents and physical controls.
   rounded(tv,5.5,3.65,2.0,.32,plastic,[0,0,-.2]);
@@ -130,11 +137,12 @@ export function createInvitation() {
   for(const x of [-1.1,-.55,0,.55,1.1]){const ring=new THREE.Mesh(new THREE.TorusGeometry(.07,.017,5,10),dark);ring.position.set(x,1.62,.07);calendar.add(ring);}
 
   const pizzaBox=new THREE.Group();pizzaBox.position.set(3.35,.54,1.65);pizzaBox.rotation.y=-.13;group.add(pizzaBox);
-  box(pizzaBox,[3.15,.1,3.15],[0,.04,0],cardboard);
-  box(pizzaBox,[3.02,.02,3.02],[0,.101,0],cream);
-  for(const x of [-1.53,1.53])box(pizzaBox,[.09,.28,3.15],[x,.2,0],cardboard);
-  box(pizzaBox,[3.15,.28,.08],[0,.2,1.53],cardboard);
-  const lid=new THREE.Group();lid.position.set(0,.12,-1.54);lid.rotation.x=-.27;pizzaBox.add(lid);
+  const boxBody=new THREE.Group();pizzaBox.add(boxBody);
+  box(boxBody,[3.15,.1,3.15],[0,.04,0],cardboard);
+  box(boxBody,[3.02,.02,3.02],[0,.101,0],cream);
+  for(const x of [-1.53,1.53])box(boxBody,[.09,.28,3.15],[x,.2,0],cardboard);
+  box(boxBody,[3.15,.28,.08],[0,.2,1.53],cardboard);
+  const lid=new THREE.Group();lid.position.set(0,.12,-1.54);lid.rotation.x=-.27;boxBody.add(lid);
   box(lid,[3.15,3.0,.065],[0,1.5,0],cardboard);
   box(lid,[3.03,2.88,.016],[0,1.5,.044],cream);
   label(lid,'YOU EARNED',2.45,.32,[0,1.9,.065],{color:'#ad3d27'});
@@ -160,9 +168,25 @@ export function createInvitation() {
     pizza.rotation.y=(1-t)*-.12;
     pizzaSettled=t>=1;
   }
+  const framingBounds=[new THREE.Box3(),new THREE.Box3(),new THREE.Box3()];
   function layout(portrait:boolean){
-    if(portrait){tv.position.set(-.45,2.8,.1);tv.scale.setScalar(.83);books.position.set(-.45,1.02,.1);books.scale.setScalar(.83);pizzaBox.position.set(1.35,.54,2.6);pizzaBox.scale.setScalar(.78);calendar.position.set(2.2,5.9,-1.97);calendar.scale.setScalar(.78);}
-    else{tv.position.set(-1.65,2.6,.15);tv.scale.setScalar(1);books.position.set(-1.65,.47,.15);books.scale.setScalar(1);pizzaBox.position.set(3.35,.54,1.65);pizzaBox.scale.setScalar(1);calendar.position.set(3.5,4.35,-1.97);calendar.scale.setScalar(1);}
+    if(portrait){
+      tvStand.position.set(-.95,.435,.1);tvStand.scale.setScalar(.8);
+      pizzaBox.position.set(2.65,.54,2);pizzaBox.scale.setScalar(.66);
+      calendar.position.set(2.7,5.1,-1.97);calendar.scale.setScalar(.72);
+    }else{
+      tvStand.position.set(-1.65,.435,.15);tvStand.scale.setScalar(1);
+      pizzaBox.position.set(3.35,.54,1.65);pizzaBox.scale.setScalar(1);
+      calendar.position.set(3.5,4.35,-1.97);calendar.scale.setScalar(1);
+    }
+    // The tray's local underside is -0.01; rest it on the tabletop at Y=.435.
+    pizzaBox.position.y=.435+.01*pizzaBox.scale.y;
+    napkin.visible=shaker.visible=!portrait;
+    group.updateMatrixWorld(true);
+    framingBounds[0].setFromObject(tvStand);
+    framingBounds[1].setFromObject(boxBody);
+    framingBounds[2].setFromObject(calendar);
   }
-  return {scene,group,tv,screen,pizza,pizzaBox,reset,update,layout,get pizzaStarted(){return pizzaStarted;},get pizzaSettled(){return pizzaSettled;}};
+  layout(false);
+  return {scene,group,tv,screen,pizza,pizzaBox,framingBounds,reset,update,layout,get pizzaStarted(){return pizzaStarted;},get pizzaSettled(){return pizzaSettled;}};
 }

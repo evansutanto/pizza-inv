@@ -40,6 +40,8 @@ export class ExperienceController {
   private hiddenAt=0;
   private invitationElapsed=0;
   private invitationPresented=false;
+  private invitationTransitioning=false;
+  private invitationFrameReady?:()=>void;
   private disposed=false;
   private warmupTimer=0;
   private readonly projected=new THREE.Vector3();
@@ -48,7 +50,6 @@ export class ExperienceController {
   private readonly hintEdge=new THREE.Vector3();
   private sound:Soundscape;
   private lastPizza:PizzaSnapshot={state:'move',taps:0};
-  private bakeWhooshPlayed=false;
   private ovenDonePlayed=false;
 
   constructor(private ui:Overlays){this.sound=new Soundscape(enabled=>this.ui.soundState(enabled));}
@@ -128,25 +129,41 @@ export class ExperienceController {
   }
 
   private enter(){
+    if(this.invitationTransitioning)return;
     if(!this.state.enter())return;
     this.sound.unlock();this.sound.play('bell');
     this.rig.resetFov();this.phaseStart=performance.now();this.setPhase();
   }
   private bake(){
+    if(this.invitationTransitioning)return;
     if(!this.state.bake(this.machine.state==='ready'))return;
-    this.sound.unlock();this.bakeWhooshPlayed=false;
+    this.sound.unlock();
     this.interactions?.setEnabled(false);this.phaseStart=performance.now();this.setPhase();
   }
-  private openInvitation(){
-    if(this.state.phase==='invitation'||this.state.phase==='fallback')return;
-    this.sound.unlock();
-    if(this.state.phase!=='baking')this.sound.play('whoosh');
-    this.ovenDonePlayed=false;
-    this.state.invite();this.phaseStart=performance.now();this.invitationElapsed=0;
-    this.invitationPresented=false;
-    this.invitation.reset();this.rig.invitation();this.interactions?.setEnabled(false);this.ui.flash(false);this.setPhase();
+  private async openInvitation(){
+    if(this.invitationTransitioning||this.state.phase==='invitation'||this.state.phase==='fallback')return;
+    this.invitationTransitioning=true;this.interactions?.setEnabled(false);
+    this.sound.unlock();this.sound.play('whoosh');
+    try{
+      if(!this.reducedMotion)await this.ui.fadeToWhite(true,CONFIG.inviteFadeOutDuration);
+      if(this.disposed)return;
+      this.ovenDonePlayed=false;this.invitationElapsed=0;this.invitationPresented=false;
+      this.state.invite();this.phaseStart=performance.now();this.invitation.reset();this.setPhase();this.frameInvitation();
+      // Keep the white cover until the new WebGL scene has actually rendered.
+      await new Promise<void>(resolve=>{this.invitationFrameReady=resolve;});
+      if(this.disposed)return;
+      if(!this.reducedMotion){
+        // Let the browser paint that frame before starting a fresh CSS timeline.
+        // Shader compilation on a slow device must not consume the reveal.
+        await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));
+        if(this.disposed)return;
+        await this.ui.fadeToWhite(false,CONFIG.inviteFadeInDuration);
+      }
+      this.ui.clearFade();this.phaseStart=performance.now();
+    }finally{this.invitationTransitioning=false;}
   }
   private replay(){
+    if(this.invitationTransitioning)return;
     if(!this.state.replay())return;
     this.machine.reset();this.kitchen.reset();this.invitation.reset();this.exterior.setDoorOpen(0);
     this.lastPizza=this.machine.snapshot;
@@ -170,7 +187,7 @@ export class ExperienceController {
     this.activityUntil=performance.now()+900;this.ui.hint();this.ui.pizza(snapshot);
   }
   private stepAction(){
-    if(this.state.phase!=='kitchen')return;
+    if(this.state.phase!=='kitchen'||this.invitationTransitioning)return;
     this.sound.unlock();
     this.interactions?.cancel();
     this.ui.hint();
@@ -190,9 +207,15 @@ export class ExperienceController {
     const width=this.ui.canvas.clientWidth||innerWidth,height=this.ui.canvas.clientHeight||innerHeight;
     this.rig.resize(width,height);this.quality.resize(width,height);this.invitation.layout(width/height<.85);
     if(this.state.phase==='kitchen'||this.state.phase==='baking')this.rig.kitchen();
-    else if(this.state.phase==='invitation')this.rig.invitation();
+    else if(this.state.phase==='invitation')this.frameInvitation();
     else if(this.state.phase==='exterior')this.rig.exterior(performance.now()/1000,this.reducedMotion);
     if(this.state.phase==='kitchen'&&this.machine.state==='move')this.layoutDoughHint();
+  }
+
+  private frameInvitation(){
+    const frame=this.ui.invitationFrame();
+    this.invitation.layout(frame.width/frame.height<.85);
+    this.rig.invitation(this.invitation.framingBounds,frame);
   }
 
   private layoutDoughHint(){
@@ -219,6 +242,9 @@ export class ExperienceController {
   private tick=(now:number)=>{
     if(this.disposed||this.state.phase==='fallback'||document.hidden)return;
     this.animationFrame=requestAnimationFrame(this.tick);
+    // Both fades cover a static frame. Leave the GPU idle while CSS animates,
+    // allowing exactly one invitation render underneath the opaque cover.
+    if(this.invitationTransitioning&&!this.invitationFrameReady){this.previousRender=0;return;}
     const phase=this.state.phase;
     const elapsed=(now-this.phaseStart)/1000;
     const inviteActive=phase==='invitation'&&elapsed<CONFIG.invitationPizzaDelay+CONFIG.invitationPizzaDuration+.2;
@@ -239,12 +265,11 @@ export class ExperienceController {
     this.ui.doughDragHint.update(now/1000,this.state.phase==='kitchen'&&this.machine.state==='move'&&!this.pointerDown&&!this.interactions?.isInteracting,this.reducedMotion);
     if(phase==='baking'){
       const progress=Math.min(1,elapsed/(this.reducedMotion?.25:CONFIG.bakeDuration));
-      this.kitchen.bake(progress);this.ui.flash(!this.reducedMotion&&progress>.72);
-      if(progress>.65&&!this.bakeWhooshPlayed){this.bakeWhooshPlayed=true;this.sound.play('whoosh');}
+      this.kitchen.bake(progress);
       if(progress>=1)this.openInvitation();
     }
     if(this.state.phase==='invitation'){
-      this.invitationElapsed=this.invitationPresented?(now-this.phaseStart)/1000:0;
+      this.invitationElapsed=this.invitationPresented&&!this.invitationTransitioning?(now-this.phaseStart)/1000:0;
       this.invitation.update(this.invitationElapsed,this.reducedMotion);
       if(this.invitation.pizzaSettled&&!this.ovenDonePlayed){this.ovenDonePlayed=true;this.sound.play('ovenDone');}
     }else if(this.state.phase==='exterior'||this.state.phase==='entering'){
@@ -256,6 +281,7 @@ export class ExperienceController {
       // Count the empty-box pause from the first rendered CRT frame, including
       // browsers that compile its shaders synchronously on first use.
       this.invitationPresented=true;this.phaseStart=performance.now();
+      this.invitationFrameReady?.();this.invitationFrameReady=undefined;
     }
     // A scene change resets the window; do not attribute the previous scene's
     // last interval to the new scene or include a visibility suspension.
@@ -299,6 +325,7 @@ export class ExperienceController {
   }
   dispose(){
     if(this.disposed)return;this.disposed=true;cancelAnimationFrame(this.animationFrame);clearTimeout(this.warmupTimer);this.abort.abort();this.interactions?.dispose();this.panel?.dispose();
+    this.invitationFrameReady?.();this.invitationFrameReady=undefined;this.ui.clearFade();
     this.sound.dispose();
     disposeTree(this.world);if(this.invitation)disposeTree(this.invitation.scene);this.renderer?.dispose();
     THREE.DefaultLoadingManager.onError=()=>{};

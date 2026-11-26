@@ -10,6 +10,8 @@ export const CONFIG = {
   rsvpUrl: '',
   entranceDuration: 3.4,
   bakeDuration: 1.25,
+  inviteFadeOutDuration: .28,
+  inviteFadeInDuration: .42,
   invitationPizzaDelay: 3,
   invitationPizzaDuration: 1.5,
   reducedTransitionDuration: 0.16,
