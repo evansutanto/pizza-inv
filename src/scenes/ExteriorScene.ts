@@ -23,7 +23,6 @@ export function createExterior(): ExteriorScene {
   const cream = material('#bdb39a');
   const wood = material('#64341f');
   const cardboard = material('#9e7144');
-  const orange = new THREE.MeshBasicMaterial({ color: '#ff762f', toneMapped: false });
   const warm = material('#eaa052', { emissive: '#f48a26', emissiveIntensity: 0.6 });
   const darkGlass = material('#11232b', { metalness: 0.48, roughness: 0.26 });
 
@@ -170,9 +169,7 @@ export function createExterior(): ExteriorScene {
   const doormat = box(group, [1.58, .015, .78], [2.25, .05, .75], material('#251d17')); doormat.receiveShadow = true;
 
   // Marquee: emissive orange lettering, physical casing, and a restrained glow card.
-  box(group, [10.6, 1.02, .35], [-.55, 4.13, .41], iron);
-  box(group, [10.42, .035, .05], [-.55, 4.6, .61], orange);
-  box(group, [10.42, .035, .05], [-.55, 3.66, .61], orange);
+  box(group, [10.6, 1.30, .35], [-.55, 3.99, .41], iron);
   const signMap = canvasTexture(2048, 256, (ctx, w, h) => {
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '700 230px "Helvetica Neue", Helvetica, Arial, sans-serif';
     ctx.shadowColor = '#ff5e16'; ctx.shadowBlur = 22; ctx.strokeStyle = '#ff6d22'; ctx.lineWidth = 6;
@@ -182,7 +179,20 @@ export function createExterior(): ExteriorScene {
   });
   const signMaterial = new THREE.MeshBasicMaterial({ map: signMap, transparent: true, toneMapped: false, depthWrite: false });
   const sign = new THREE.Mesh(new THREE.PlaneGeometry(10.0, 1.02), signMaterial); sign.position.set(-.55, 4.13, .62); group.add(sign);
-  label(group, 'NEW YORK STYLE • BY THE SLICE', 5.7, .21, [-.65, 3.51, .74], { color: '#d2bba1' });
+  // Match the texture and plane proportions so this narrow strip keeps the
+  // font's natural letter shapes instead of stretching a minimum-height label.
+  const subtitleMap = canvasTexture(1536, 128, (ctx, w, h) => {
+    const text = 'NEW YORK STYLE • BY THE SLICE';
+    let size = 90;
+    ctx.font = `500 ${size}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+    size *= Math.min(1, w * .94 / ctx.measureText(text).width);
+    ctx.font = `500 ${size}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#d2bba1';
+    ctx.fillText(text, w / 2, h / 2);
+  });
+  const subtitle = new THREE.Mesh(new THREE.PlaneGeometry(5.7, 5.7 * 128 / 1536),
+    new THREE.MeshBasicMaterial({ map: subtitleMap, transparent: true, depthWrite: false, toneMapped: false }));
+  subtitle.position.set(-.65, 3.50, .74); group.add(subtitle);
   const glowTexture = canvasTexture(128, 128, (ctx, w, h) => {
     const glow = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2);
     glow.addColorStop(0, 'rgba(255,100,20,.3)'); glow.addColorStop(.4, 'rgba(255,80,10,.11)'); glow.addColorStop(1, 'rgba(255,80,10,0)');
@@ -257,7 +267,6 @@ export function createExterior(): ExteriorScene {
   reflection.renderOrder = 1;
 
   const rain = createStreetRain(); group.add(rain.object);
-  const neonColor = orange.color.clone();
   let heroStart: number | undefined;
 
   return {
@@ -284,7 +293,6 @@ export function createExterior(): ExteriorScene {
       signLight.intensity = 32 * flicker;
       glowMaterial.opacity = .55 * flicker;
       reflectionMaterial.opacity = .65 * flicker;
-      orange.color.copy(neonColor).multiplyScalar(flicker);
       signGlow.visible = !low;
       reflection.visible = !low;
       rain.update(t, quality.toLowerCase(), active && !low);
