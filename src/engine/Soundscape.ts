@@ -1,7 +1,7 @@
 import { CONFIG, type ExperiencePhase } from '../app/Config';
 import { AUDIO_NAMES, audioAsset, type AudioId, type EffectId } from './audioAssets';
 
-type LoopId = 'rain' | 'music';
+type LoopId = 'rain' | 'music' | 'inviteMusic';
 interface LoopChannel {
   media: HTMLAudioElement;
   source: MediaElementAudioSourceNode;
@@ -101,7 +101,7 @@ export class Soundscape {
     this.context = new Context({ latencyHint: 'interactive' });
     this.master = this.context.createGain(); this.master.gain.value = 0; this.master.connect(this.context.destination);
     this.effects = this.context.createGain(); this.effects.gain.value = CONFIG.audio.effectsVolume; this.effects.connect(this.master);
-    for (const id of ['rain', 'music'] as const) {
+    for (const id of ['rain', 'music', 'inviteMusic'] as const) {
       const asset = audioAsset(id), media = new Audio();
       media.loop = true; media.preload = 'none';
       const source = this.context.createMediaElementSource(media), gain = this.context.createGain();
@@ -148,7 +148,7 @@ export class Soundscape {
 
   private preloadEffects() {
     for (const id of Object.keys(AUDIO_NAMES) as AudioId[]) {
-      if (id !== 'rain' && id !== 'music') void this.buffer(id);
+      if (id !== 'rain' && id !== 'music' && id !== 'inviteMusic') void this.buffer(id);
     }
   }
 
@@ -163,9 +163,11 @@ export class Soundscape {
   private syncLoops() {
     if (!this.enabled || !this.activated || this.hidden || !this.context) return;
     const outside = this.phase === 'exterior';
-    const inside = ['entering', 'kitchen', 'baking', 'invitation'].includes(this.phase);
+    const insideShop = ['entering', 'kitchen', 'baking'].includes(this.phase);
+    const invitation = this.phase === 'invitation';
     this.fade('rain', outside ? CONFIG.audio.rainVolume : 0);
-    this.fade('music', inside ? CONFIG.audio.musicVolume : 0);
+    this.fade('music', insideShop ? CONFIG.audio.musicVolume : 0);
+    this.fade('inviteMusic', invitation ? CONFIG.audio.musicVolume : 0);
   }
 
   private fade(id: LoopId, target: number) {
@@ -227,7 +229,7 @@ export class Soundscape {
       return { playing: channel ? !channel.media.paused : false, time: channel?.media.currentTime || 0, targetVolume: channel?.target || 0 };
     };
     return { enabled: this.enabled, activated: this.activated, contextState: this.context?.state || 'not-created',
-      rain: loop('rain'), music: loop('music'), voices: this.voices.size,
+      rain: loop('rain'), music: loop('music'), inviteMusic: loop('inviteMusic'), voices: this.voices.size,
       played: { ...this.played }, lastCue: this.lastCue,
       assets: Object.fromEntries((Object.keys(AUDIO_NAMES) as AudioId[]).map(id => [id, audioAsset(id).custom ? 'custom' : 'generated'])) };
   }

@@ -139,6 +139,36 @@ export function createInvitation() {
   const bottle=new THREE.Mesh(new THREE.CylinderGeometry(.21,.27,.72,12),glass);bottle.position.y=.36;shaker.add(bottle);
   const cap=new THREE.Mesh(new THREE.CylinderGeometry(.23,.23,.12,12),material('#8c8a7e',{metalness:.8,roughness:.3}));cap.position.y=.76;shaker.add(cap);
 
+  // A compact stylized handgun prop rests flat near the front-left table edge.
+  const tableGun=new THREE.Group();tableGun.name='tabletop-handgun-prop';
+  tableGun.position.set(-3.25,.5,3.65);tableGun.rotation.x=-Math.PI/2;group.add(tableGun);
+  const gunMetal=material('#292c2c',{roughness:.4,metalness:.5});
+  const gunAccent=material('#706b5d',{roughness:.48,metalness:.52});
+  const gripMaterial=material('#523a2b',{roughness:.78});
+  const gripInset=material('#39291f',{roughness:.83});
+  box(tableGun,[1.02,.28,.09],[.015,.14,0],gunMetal);
+  box(tableGun,[.69,.075,.095],[-.015,.32,0],gunMetal);
+  box(tableGun,[.075,.052,.11],[-.34,.39,0],gunAccent);
+  box(tableGun,[.075,.052,.11],[.31,.39,0],gunAccent);
+  const barrel=new THREE.Mesh(new THREE.CylinderGeometry(.064,.064,.48,12),gunMetal);
+  barrel.rotation.z=-Math.PI/2;barrel.position.set(.71,.16,0);barrel.castShadow=true;barrel.receiveShadow=true;tableGun.add(barrel);
+  const muzzle=new THREE.Mesh(new THREE.CylinderGeometry(.086,.086,.035,12),gunAccent);
+  muzzle.rotation.z=-Math.PI/2;muzzle.position.set(.96,.16,0);muzzle.castShadow=true;muzzle.receiveShadow=true;tableGun.add(muzzle);
+  const cylinder=new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,.17,12),gunMetal);
+  cylinder.rotation.x=Math.PI/2;cylinder.position.set(-.14,.14,0);cylinder.castShadow=true;cylinder.receiveShadow=true;tableGun.add(cylinder);
+  const grip=box(tableGun,[.28,.62,.08],[-.31,-.27,0],gripMaterial);grip.rotation.z=-.22;
+  for(const side of [-1,1]){
+    const panel=box(tableGun,[.17,.41,.014],[-.33,-.3,side*.046],gripInset);panel.rotation.z=-.22;
+  }
+  const guardPath=new THREE.CatmullRomCurve3([
+    new THREE.Vector3(-.13,.02,0),new THREE.Vector3(-.16,-.13,0),
+    new THREE.Vector3(-.08,-.22,0),new THREE.Vector3(.11,-.19,0),new THREE.Vector3(.16,-.02,0),
+  ]);
+  const triggerGuard=new THREE.Mesh(new THREE.TubeGeometry(guardPath,20,.018,6,false),gunAccent);
+  triggerGuard.castShadow=true;tableGun.add(triggerGuard);
+  const trigger=new THREE.Mesh(new THREE.CylinderGeometry(.014,.014,.12,8),gunAccent);
+  trigger.rotation.x=Math.PI/2;trigger.position.set(.035,-.055,0);tableGun.add(trigger);
+
   let pizzaStarted=false,pizzaSettled=false;
   function reset(){pizza.visible=false;pizza.position.set(-6,.3,0);pizzaStarted=false;pizzaSettled=false;retroScreen.update(0,true);}
   function update(elapsed:number,reducedMotion:boolean){
@@ -151,7 +181,7 @@ export function createInvitation() {
     pizza.rotation.y=(1-t)*-.12;
     pizzaSettled=t>=1;
   }
-  const framingBounds=[new THREE.Box3(),new THREE.Box3(),new THREE.Box3()];
+  const framingBounds=[new THREE.Box3(),new THREE.Box3(),new THREE.Box3(),new THREE.Box3()];
   function layout(portrait:boolean){
     if(portrait){
       tvAssembly.position.set(-.95,.435,.1);tvAssembly.scale.setScalar(.8);
@@ -169,6 +199,7 @@ export function createInvitation() {
     framingBounds[0].setFromObject(tvAssembly);
     framingBounds[1].setFromObject(boxBody);
     framingBounds[2].setFromObject(calendar);
+    framingBounds[3].setFromObject(tableGun);
   }
   layout(false);
   return {scene,group,tv,screen,pizza,pizzaBox,framingBounds,reset,update,layout,

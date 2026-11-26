@@ -52,3 +52,18 @@ body[data-phase="kitchen"] .prep-caption{top:129px}
 .sound-button svg{width:16px;height:16px}.sound-button[aria-pressed=true]{color:var(--orange);border-color:var(--orange)}
 body[data-phase=invitation] .sound-button{border-color:#92352155}
 @media(max-width:800px){.experience-controls{gap:7px}.sound-button{font-size:8px;padding:0 8px;gap:5px}.sound-button svg{width:14px;height:14px}}
+/* Keep every invitation detail centered on mobile and show the ticket star. */
+@media (max-width:800px), (max-height:600px) and (min-aspect-ratio:1/1){
+  .invitation-title{left:0;width:100%;text-align:center}
+  .invite-ticket{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px}
+  .ticket-heading{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;width:100%;text-align:center}
+  .ticket-heading>div{display:flex;flex-direction:column;align-items:center;width:100%}
+  .ticket-heading strong{display:block;max-width:100%;font-size:clamp(22px,6vw,27px);line-height:1.08;text-align:center}
+  .ticket-heading p{width:100%;max-width:100%;margin:6px 0 0;text-align:center}
+  .ticket-heading p span{display:inline-block;margin-left:8px}
+  .ticket-star{display:block!important;font-size:clamp(28px,8vw,34px);line-height:1}
+  .invite-question,.invite-address-note{width:100%;max-width:100%;text-align:center}
+  .ticket-actions{width:100%;justify-content:center;align-items:center;flex-wrap:wrap;margin-top:5px}
+}
+/* Keep the invitation scene's colors clear; the white shutter is transition-only. */
+body[data-phase="invitation"] .vignette{background:none}

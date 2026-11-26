@@ -3,7 +3,7 @@ const custom = import.meta.glob('../assets/audio/*.{mp3,m4a,ogg,wav}', { eager: 
 const generated = import.meta.glob('../assets/audio/generated/*.wav', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
 
 export const AUDIO_NAMES = {
-  rain: 'rain', music: 'shop-music', bell: 'door-bell',
+  rain: 'rain', music: 'shop-music', inviteMusic: 'inv', bell: 'door-bell',
   doughPickup: 'dough-pickup', doughDrop: 'dough-drop', doughHit: 'dough-hit',
   saucePickup: 'sauce-pickup', sauceDrop: 'sauce-drop',
   cheesePickup: 'cheese-pickup', cheeseDrop: 'cheese-drop',
@@ -11,7 +11,7 @@ export const AUDIO_NAMES = {
 } as const;
 
 export type AudioId = keyof typeof AUDIO_NAMES;
-export type EffectId = Exclude<AudioId, 'rain' | 'music'>;
+export type EffectId = Exclude<AudioId, 'rain' | 'music' | 'inviteMusic'>;
 
 export function audioAsset(id: AudioId) {
   const name = AUDIO_NAMES[id];
