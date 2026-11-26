@@ -79,6 +79,7 @@ The stack is vanilla **Three.js + TypeScript + Vite**, with one WebGL canvas and
 | `src/scenes/ExteriorScene.ts` | Physical facade, recessed opening door, street and connected shop |
 | `src/scenes/KitchenScene.ts` and `src/gameplay/` | Modeled ingredients, deterministic game state and pointer interaction |
 | `src/scenes/InvitationScene.ts` | CRT, editable screen texture, calendar, open pizza box and delayed pizza |
+| `src/scenes/RetroScreen.ts` | TV-only tracking band, brief picture tears, RGB separation and static |
 | `src/ui/` and `src/styles/` | Crisp responsive HTML controls, accessible text, performance panel |
 | `tests/` | State/measurement tests and browser acceptance checks |
 
@@ -98,6 +99,7 @@ Open `?perf=1` to expose the benchmark panel, quality controls, and local JSON r
 - **Balanced** caps it at 1.25 and uses 512px shadows, retaining the glow and reflection cards.
 - **Low** caps it at 1.0, disables shadows and grain, and removes optional glow/reflection decoration.
 - Hero rain is one depth-tested GPU line batch: **96 streaks on Balanced, 192 on High, none on Low** (384 vertices maximum). Only a time uniform changes each frame; there is no CPU particle simulation, buffer upload, extra canvas or postprocessing pass. Rain uses the existing 30 FPS idle cadence. The neon gives a clear dim/recover/echo sequence every 4.6 seconds, including Low quality, with its first sequence starting after the welcome renders. Its letters, light spill, glow and street reflection dim together. Rain and flicker stop outside the exterior/entrance and with reduced motion.
+- The CRT uses its existing screen mesh/material for a slow tracking band and brief glitches every 5.4 seconds. Only uniforms change in the existing render loop; its canvas texture stays static, with no extra render pass, render target, particle system or animation loop. Reduced motion disables the animated distortion. Timing is editable through `crtGlitchInterval`, `crtGlitchDelay` and `crtGlitchDuration` in `Config.ts`.
 - **Auto** starts Balanced and adapts from measured frame intervals with multi-second sampling and hysteresis. Use a fixed preset for reproducible comparisons.
 - Neon glow and street reflections use inexpensive authored textures rather than real-time bloom or reflection passes. This reduces GPU cost at the expense of physically accurate reflected geometry.
 - Procedural assets avoid download latency and licensing dependencies, but scene construction/texture generation still costs startup time. The first-interactive measurement includes that work.

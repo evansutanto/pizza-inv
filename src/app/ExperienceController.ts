@@ -303,7 +303,7 @@ export class ExperienceController {
       get reducedMotion(){return self.reducedMotion;},
       get atmosphere(){return self.exterior.atmosphere;},
       get audio(){return self.sound.diagnostics;},
-      get invitation(){return {pizzaStarted:self.invitation.pizzaStarted,pizzaSettled:self.invitation.pizzaSettled,pizzaX:self.invitation.pizza.position.x,elapsed:self.invitationElapsed};},
+      get invitation(){return {pizzaStarted:self.invitation.pizzaStarted,pizzaSettled:self.invitation.pizzaSettled,pizzaX:self.invitation.pizza.position.x,elapsed:self.invitationElapsed,crtGlitch:self.invitation.crtGlitch,crtAnimated:self.invitation.crtAnimated};},
       get benchmark(){return self.monitor.snapshot();},
       project(id:IngredientId|'target'){
         if(id==='target')self.kitchen.getTargetWorld(self.projected);else self.kitchen.getIngredientWorld(id,self.projected);

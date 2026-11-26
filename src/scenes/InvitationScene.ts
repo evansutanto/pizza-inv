@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { CONFIG } from '../app/Config';
 import { box, canvasTexture, easeOut, label, material } from '../engine/primitives';
 import { createPizza } from '../gameplay/pizzaMeshes';
+import { createRetroScreen } from './RetroScreen';
 
 function roundShape(w: number, h: number, r: number) {
   const s = new THREE.Shape();
@@ -83,7 +84,8 @@ export function createInvitation() {
   const screenGeometry=new THREE.PlaneGeometry(3.64,2.51,20,14);
   const positions=screenGeometry.attributes.position;
   for(let i=0;i<positions.count;i++){const x=positions.getX(i)/1.82,y=positions.getY(i)/1.255;positions.setZ(i,.105*(1-x*x)*(1-y*y));}screenGeometry.computeVertexNormals();
-  const screen=new THREE.Mesh(screenGeometry,new THREE.MeshBasicMaterial({map:screenTexture,toneMapped:false}));
+  const retroScreen=createRetroScreen(screenTexture);
+  const screen=new THREE.Mesh(screenGeometry,retroScreen.material);
   screen.position.set(-.4,.08,1.155);tv.add(screen);
   // Lamp, knurled knobs, speaker perforations, feet and rabbit ears.
   const knobGeo=new THREE.CylinderGeometry(.19,.19,.13,20);knobGeo.rotateX(Math.PI/2);
@@ -127,8 +129,6 @@ export function createInvitation() {
   const lid=new THREE.Group();lid.position.set(0,.12,-1.54);lid.rotation.x=-.27;boxBody.add(lid);
   box(lid,[3.15,3.0,.065],[0,1.5,0],cardboard);
   box(lid,[3.03,2.88,.016],[0,1.5,.044],cream);
-  label(lid,'YOU EARNED',2.45,.32,[0,1.9,.065],{color:'#ad3d27'});
-  label(lid,'THIS SLICE.',2.5,.44,[0,1.4,.065],{color:'#ad3d27'});
   const pizza=createPizza({finished:true,pepperoni:true}).group;
   pizza.scale.setScalar(.94);pizza.position.set(-6,.3,0);pizza.visible=false;pizzaBox.add(pizza);
   // Red checker napkin and glass pepper shaker round out the tabletop.
@@ -140,8 +140,9 @@ export function createInvitation() {
   const cap=new THREE.Mesh(new THREE.CylinderGeometry(.23,.23,.12,12),material('#8c8a7e',{metalness:.8,roughness:.3}));cap.position.y=.76;shaker.add(cap);
 
   let pizzaStarted=false,pizzaSettled=false;
-  function reset(){pizza.visible=false;pizza.position.set(-6,.3,0);pizzaStarted=false;pizzaSettled=false;}
+  function reset(){pizza.visible=false;pizza.position.set(-6,.3,0);pizzaStarted=false;pizzaSettled=false;retroScreen.update(0,true);}
   function update(elapsed:number,reducedMotion:boolean){
+    retroScreen.update(elapsed,reducedMotion);
     if(elapsed<CONFIG.invitationPizzaDelay)return;
     pizzaStarted=true;pizza.visible=true;
     const t=Math.min(1,(elapsed-CONFIG.invitationPizzaDelay)/(reducedMotion?.12:CONFIG.invitationPizzaDuration));
@@ -170,5 +171,7 @@ export function createInvitation() {
     framingBounds[2].setFromObject(calendar);
   }
   layout(false);
-  return {scene,group,tv,screen,pizza,pizzaBox,framingBounds,reset,update,layout,get pizzaStarted(){return pizzaStarted;},get pizzaSettled(){return pizzaSettled;}};
+  return {scene,group,tv,screen,pizza,pizzaBox,framingBounds,reset,update,layout,
+    get crtGlitch(){return retroScreen.glitchAmount;},get crtAnimated(){return retroScreen.animated;},
+    get pizzaStarted(){return pizzaStarted;},get pizzaSettled(){return pizzaSettled;}};
 }

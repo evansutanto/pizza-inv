@@ -14,6 +14,9 @@ export const CONFIG = {
   inviteFadeInDuration: .42,
   invitationPizzaDelay: 3,
   invitationPizzaDuration: 1.5,
+  crtGlitchInterval: 5.4,
+  crtGlitchDelay: .18,
+  crtGlitchDuration: .48,
   reducedTransitionDuration: 0.16,
   kitchenCenter: { x: 0, y: 1, z: -8 },
   audio: {
