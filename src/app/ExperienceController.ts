@@ -25,7 +25,7 @@ export class ExperienceController {
   private kitchen!:ReturnType<typeof createKitchen>;
   private invitation!:ReturnType<typeof createInvitation>;
   private quality!:QualityManager;
-  private monitor=new PerfMonitor();
+  private monitor?:PerfMonitor;
   private panel?:PerfPanel;
   private interactions?:InteractionController;
   private abort=new AbortController();
@@ -67,12 +67,15 @@ export class ExperienceController {
       this.invitation=createInvitation();
       this.quality=new QualityManager(this.renderer,settings=>{
         document.body.classList.toggle('no-grain',!settings.grain);
-        document.body.dataset.quality=settings.preset;
+        if(import.meta.env.DEV)document.body.dataset.quality=settings.preset;
       });
       this.quality.setScenes([this.world,this.invitation.scene]);
-      this.panel=new PerfPanel(document.body,this.quality,this.monitor);
-      const preset=new URLSearchParams(location.search).get('quality');
-      if(preset==='low'||preset==='balanced'||preset==='high'||preset==='auto')this.quality.setPreset(preset);
+      if(import.meta.env.DEV){
+        this.monitor=new PerfMonitor();
+        this.panel=new PerfPanel(document.body,this.quality,this.monitor);
+        const preset=new URLSearchParams(location.search).get('quality');
+        if(preset==='low'||preset==='balanced'||preset==='high'||preset==='auto')this.quality.setPreset(preset);
+      }
       this.interactions=new InteractionController(this.ui.canvas,this.rig.camera,this.kitchen,this.machine,snapshot=>this.pizzaChanged(snapshot));
       this.bindEvents();this.resize();this.ui.motion(this.reducedMotion);
       this.state.setReady();this.setPhase();this.rig.exterior(0,this.reducedMotion);
@@ -81,7 +84,7 @@ export class ExperienceController {
       // Begin the first flicker after the welcome is presented, so initial
       // shader compilation cannot consume the first visible dimming sequence.
       this.exterior.startAtmosphere(performance.now()/1000);
-      this.monitor.markInteractive();this.installDiagnostics();
+      if(import.meta.env.DEV){this.monitor?.markInteractive();this.installDiagnostics();}
       this.animationFrame=requestAnimationFrame(this.tick);
       // Prepare the CRT material programs after the welcome has painted. This
       // reduces the first invitation's shader stall; any work is still visible
@@ -171,7 +174,7 @@ export class ExperienceController {
     this.setPhase();this.ui.enter.focus({preventScroll:true});
   }
   private setPhase(){
-    this.ui.phase(this.state.phase);this.monitor.resetWindow();
+    this.ui.phase(this.state.phase);this.monitor?.resetWindow();
     this.sound.setPhase(this.state.phase);
     if(this.state.phase!=='exterior'&&this.state.phase!=='entering')this.exterior.update(0,this.quality.applied,false);
     this.previousRender=0;
@@ -235,7 +238,7 @@ export class ExperienceController {
     if(document.hidden){this.hiddenAt=performance.now();cancelAnimationFrame(this.animationFrame);this.previousRender=0;}
     else if(this.state.phase!=='fallback'&&!this.disposed){
       if(this.hiddenAt)this.phaseStart+=performance.now()-this.hiddenAt;
-      this.hiddenAt=0;this.previousRender=0;this.monitor.resetWindow();this.animationFrame=requestAnimationFrame(this.tick);
+      this.hiddenAt=0;this.previousRender=0;this.monitor?.resetWindow();this.animationFrame=requestAnimationFrame(this.tick);
     }
   }
 
@@ -249,7 +252,7 @@ export class ExperienceController {
     const elapsed=(now-this.phaseStart)/1000;
     const inviteActive=phase==='invitation'&&elapsed<CONFIG.invitationPizzaDelay+CONFIG.invitationPizzaDuration+.2;
     const animating=phase==='entering'||phase==='baking'||inviteActive||now<this.activityUntil||this.pointerDown;
-    const benchmarking=!document.querySelector<HTMLElement>('.benchmark-panel')?.hidden;
+    const benchmarking=import.meta.env.DEV&&!document.querySelector<HTMLElement>('.benchmark-panel')?.hidden;
     const interval=animating||benchmarking?0:this.reducedMotion?1000/15:1000/30;
     if(this.previousRender&&now-this.previousRender<interval-1)return;
     const frameMs=this.previousRender?now-this.previousRender:0;
@@ -286,13 +289,14 @@ export class ExperienceController {
     // A scene change resets the window; do not attribute the previous scene's
     // last interval to the new scene or include a visibility suspension.
     if(frameMs>0&&this.state.phase===phase){
-      this.monitor.record(frameMs,this.renderer,{scene:this.state.phase,animating,requestedQuality:this.quality.requested,appliedQuality:this.quality.applied});
+      if(import.meta.env.DEV)this.monitor?.record(frameMs,this.renderer,{scene:this.state.phase,animating,requestedQuality:this.quality.requested,appliedQuality:this.quality.applied});
       if(animating||benchmarking)this.quality.sample(frameMs,now);
     }
-    if(now-this.lastPanel>250){this.panel?.update(this.monitor.snapshot());this.lastPanel=now;}
+    if(import.meta.env.DEV&&this.monitor&&this.panel&&now-this.lastPanel>250){this.panel.update(this.monitor.snapshot());this.lastPanel=now;}
   };
 
   private installDiagnostics(){
+    if(!import.meta.env.DEV)return;
     const self=this;
     const diagnostics={
       get phase(){return self.state.phase;},
@@ -304,7 +308,7 @@ export class ExperienceController {
       get atmosphere(){return self.exterior.atmosphere;},
       get audio(){return self.sound.diagnostics;},
       get invitation(){return {pizzaStarted:self.invitation.pizzaStarted,pizzaSettled:self.invitation.pizzaSettled,pizzaX:self.invitation.pizza.position.x,elapsed:self.invitationElapsed,crtGlitch:self.invitation.crtGlitch,crtAnimated:self.invitation.crtAnimated};},
-      get benchmark(){return self.monitor.snapshot();},
+      get benchmark(){return self.monitor!.snapshot();},
       project(id:IngredientId|'target'){
         if(id==='target')self.kitchen.getTargetWorld(self.projected);else self.kitchen.getIngredientWorld(id,self.projected);
         self.rig.camera.updateMatrixWorld();self.projected.project(self.rig.camera);
@@ -312,7 +316,7 @@ export class ExperienceController {
         return {x:rect.left+(self.projected.x+1)*rect.width/2,y:rect.top+(1-self.projected.y)*rect.height/2};
       },
       loseContext(){self.renderer.forceContextLoss();},
-      report(){return self.monitor.exportReport();},
+      report(){return self.monitor!.exportReport();},
     };
     Object.defineProperty(window,'__PIZZA_LAB__',{value:diagnostics,configurable:true});
   }
@@ -320,7 +324,8 @@ export class ExperienceController {
   private showFallback(reason:string){
     cancelAnimationFrame(this.animationFrame);this.state.fallback();this.interactions?.setEnabled(false);
     this.ui.phase('fallback');this.ui.canvas.hidden=true;
-    document.body.dataset.fallbackReason=reason;this.panel?.dispose();this.panel=undefined;
+    if(import.meta.env.DEV)document.body.dataset.fallbackReason=reason;
+    this.panel?.dispose();this.panel=undefined;
     this.dispose();
   }
   dispose(){

@@ -2,10 +2,12 @@
 
 This experiment exists to help decide whether real-time 3D is worth its cost compared with the original lighter concept. Measure both on the same devices. Desktop automation and Lighthouse do not substitute for a phone GPU, thermals, touch behavior, or battery assessment.
 
+The published site has no in-page benchmark UI, quality controls, or debug API. The diagnostics described below are available only from the local Vite development server with `?perf=1`; development-server results are not production performance results. Use browser tooling for the deployed build.
+
 ## Repeatable comparison
 
 1. Deploy the 3D experiment and the original 2D concept at **independent URLs**. Keep the phone, browser version, network, brightness, power mode, orientation and other settings consistent. Record device model, OS, browser and whether the phone is warm. Disable unrelated background workloads where practical.
-2. Open the 3D URL with `?perf=1`. Select a **fixed** preset—High, Balanced or Low—and allow loading to finish. Use the same preset throughout a run; record actual render resolution, devicePixelRatio and applied pixel ratio. Auto is useful for guests, but it can change GPU cost during a comparison.
+2. For local diagnostics, run `npm run dev` and open its URL with `?perf=1`. Select a **fixed** preset—High, Balanced or Low—and allow loading to finish. Use the same preset throughout a run; record actual render resolution, devicePixelRatio and applied pixel ratio. The published build uses automatic quality and does not expose preset controls.
    Sound is enabled by default and attempts autoplay on page load. Browsers that block autoplay start it on the first sound-capable gesture. Mute it before a run if you want silent measurements; compare like audio settings. Rain/music stream natively, short effects are cached, and muted/background tabs pause playback. No audio payloads are requested before autoplay succeeds or the first gesture.
 3. Leave the exterior visible for at least **8 seconds**, then export a baseline JSON report. Record rolling average FPS, p95 frame time, draw calls, triangles and first-interactive-frame time. Keeping the benchmark panel open enables full browser animation-frame cadence. Closing it enables idle throttling, which you can assess separately for the battery/performance tradeoff.
 4. Enter the shop and observe the camera journey. Repeat the journey several times with Replay to catch visible stalls. Then place the dough, flatten it with exactly three taps, drag sauce and cheese, and bake. Test dragging near screen edges and rotating the device before another ingredient action. Check for lost pointer capture, page scroll during a drag, or accidental duplicate actions.

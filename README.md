@@ -80,7 +80,7 @@ The stack is vanilla **Three.js + TypeScript + Vite**, with one WebGL canvas and
 | `src/scenes/KitchenScene.ts` and `src/gameplay/` | Modeled ingredients, deterministic game state and pointer interaction |
 | `src/scenes/InvitationScene.ts` | CRT, editable screen texture, calendar, open pizza box and delayed pizza |
 | `src/scenes/RetroScreen.ts` | TV-only tracking band, brief picture tears, RGB separation and static |
-| `src/ui/` and `src/styles/` | Crisp responsive HTML controls, accessible text, performance panel |
+| `src/ui/` and `src/styles/` | Crisp responsive HTML controls and accessible text |
 | `tests/` | State/measurement tests and browser acceptance checks |
 
 Y is up and units are meters. The storefront is at Z=0, the street is positive Z, the door center is X=2.25, and the kitchen origin is (0, 1, -8). A separate invitation composition uses the same renderer after the bake transition. Camera framing adapts to portrait and landscape viewports.
@@ -91,9 +91,9 @@ Typography uses locally bundled **Helvetica Neue Regular (400), Medium (500), an
 
 Optional replacement textures can be placed in `public/textures/` and applied in the relevant scene module; optimized models can be placed in `public/models/` and loaded with Three.js `GLTFLoader`. Construct public URLs with `import.meta.env.BASE_URL` so repo-subpath hosting still works. Keep their license/provenance in this README, preserve the physical doorway and interaction hit targets, and dispose replaced resources. Large visual replacements require fresh mobile benchmarks.
 
-## Performance tools and tradeoffs
+## Rendering quality and tradeoffs
 
-Open `?perf=1` to expose the benchmark panel, quality controls, and local JSON report export. Nothing is uploaded. See [PERFORMANCE_TESTING.md](PERFORMANCE_TESTING.md) for exact measurement definitions and real-phone comparisons.
+The published experience adapts rendering quality automatically and has no performance controls, benchmark panel, or debug API. Local Vite development retains those tools for maintenance; they are omitted from production builds. See [PERFORMANCE_TESTING.md](PERFORMANCE_TESTING.md) for measurement notes.
 
 - **High** caps renderer pixel ratio at 1.75, enables 1024px shadows and full decoration.
 - **Balanced** caps it at 1.25 and uses 512px shadows, retaining the glow and reflection cards.
@@ -104,7 +104,7 @@ Open `?perf=1` to expose the benchmark panel, quality controls, and local JSON r
 - Neon glow and street reflections use inexpensive authored textures rather than real-time bloom or reflection passes. This reduces GPU cost at the expense of physically accurate reflected geometry.
 - Procedural assets avoid download latency and licensing dependencies, but scene construction/texture generation still costs startup time. The first-interactive measurement includes that work.
 - Hardware antialiasing is requested when the renderer is created and stays fixed for every preset. Resolution and shadow controls change cost without recreating the WebGL context. Browsers can choose whether antialiasing is available.
-- Idle scenes render at up to 30 FPS (15 with reduced motion) to reduce battery use. Animation and an **open benchmark panel** use the browser's full animation-frame cadence. Close the panel to assess idle throttling separately. A displayed 30 FPS during capped idle is an actual measured cadence, not a claim that the hardware is limited to 30 FPS.
+- Idle scenes render at up to 30 FPS (15 with reduced motion) to reduce battery use. Active animations use the browser's full animation-frame cadence. A displayed 30 FPS during capped idle is an actual measured cadence, not a claim that the hardware is limited to 30 FPS.
 - Where parallel shader compilation is supported, invitation shaders warm up after the exterior has painted. Other browsers prepare them on first use. Any visible warmup or first-render stalls remain in measured frame intervals.
 - Hidden pages pause rendering. Resource disposal removes geometries, materials, textures, listeners, and renderer resources on teardown.
 
