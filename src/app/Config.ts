@@ -1,4 +1,4 @@
-/** All guest-facing event information. Empty venue/RSVP values are intentional. */
+/** Guest-facing event details. The address is shared with guests separately. */
 export const CONFIG = {
   title: "Mike's Pizza Party",
   date: 'Saturday, 5 December 2026',

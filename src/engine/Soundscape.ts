@@ -13,7 +13,7 @@ interface LoopChannel {
   usedFallback: boolean;
 }
 
-/** Eager audio graph, enabled by default; browser playback starts on first gesture. */
+/** Eager audio graph, enabled by default; try autoplay and retry on user gesture. */
 export class Soundscape {
   private context?: AudioContext;
   private master?: GainNode;
@@ -32,8 +32,9 @@ export class Soundscape {
   private generation = 0;
 
   constructor(private onChange: (enabled: boolean) => void) {
+    this.hidden = document.hidden;
     this.onChange(true);
-    try { this.prepare(); } catch {}
+    try { this.prepare(); this.attemptAutoplay(); } catch {}
   }
 
   toggle() {
@@ -47,7 +48,10 @@ export class Soundscape {
   unlock() {
     if (!this.enabled || this.hidden || this.disposed) return;
     if (!this.activated) { this.activate(); return; }
-    if (this.context?.state === 'suspended') void this.context.resume().then(() => this.syncLoops()).catch(() => {});
+    if (this.context?.state === 'suspended') void this.context.resume().then(() => {
+      this.syncLoops(); this.retryActiveLoops();
+    }).catch(() => {});
+    else { this.syncLoops(); this.retryActiveLoops(); }
   }
 
   setPhase(phase: ExperiencePhase) { this.phase = phase; this.syncLoops(); }
@@ -57,8 +61,9 @@ export class Soundscape {
     if (hidden) {
       this.generation++;
       this.pauseLoops(); this.stopVoices();
-    } else if (this.enabled && this.activated) {
-      this.unlock(); this.syncLoops();
+    } else if (this.enabled) {
+      if (this.activated) { this.unlock(); this.syncLoops(); }
+      else this.attemptAutoplay();
     }
   }
 
@@ -125,12 +130,34 @@ export class Soundscape {
       // that block autoplay allow the active scene's loop and effects to start.
       void this.context.resume().catch(() => this.mute());
       this.syncLoops();
-      if (firstActivation) {
-        for (const id of Object.keys(AUDIO_NAMES) as AudioId[]) {
-          if (id !== 'rain' && id !== 'music') void this.buffer(id);
-        }
-      }
+      if (firstActivation) this.preloadEffects();
     } catch { this.mute(); }
+  }
+
+  private attemptAutoplay() {
+    if (!this.enabled || this.hidden || this.disposed || !this.context || !this.master) return;
+    const context = this.context;
+    void context.resume().then(() => {
+      if (this.disposed || !this.enabled || this.hidden || this.activated || context.state !== 'running') return;
+      this.activated = true;
+      this.master?.gain.setValueAtTime(CONFIG.audio.masterVolume, context.currentTime);
+      this.syncLoops();
+      this.preloadEffects();
+    }).catch(() => {});
+  }
+
+  private preloadEffects() {
+    for (const id of Object.keys(AUDIO_NAMES) as AudioId[]) {
+      if (id !== 'rain' && id !== 'music') void this.buffer(id);
+    }
+  }
+
+  private retryActiveLoops() {
+    for (const loop of Object.values(this.loops)) {
+      if (loop.target <= 0) continue;
+      if (!loop.media.hasAttribute('src')) loop.media.src = loop.url;
+      void loop.media.play().catch(() => {});
+    }
   }
 
   private syncLoops() {

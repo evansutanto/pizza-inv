@@ -2,7 +2,7 @@
 
 A separate real-time 3D experiment: a midnight New York storefront, a pizza-making counter, and a retro CRT invitation. This folder is self-contained and does not replace the original lighter 2D concept.
 
-The invitation is for **Saturday, 5 December 2026, at 18:00**. No timezone, venue, RSVP destination, or owned domain has been assumed.
+The invitation is for **Saturday, 5 December 2026, at 18:00**. The address is shared with guests who can make it. No timezone, venue, RSVP destination, or owned domain has been assumed.
 
 ## Run locally
 
@@ -39,7 +39,7 @@ Playwright needs its browser binary installed. Browser tests are local checks; G
 - The open invitation box begins empty. A separate pizza model starts moving left-to-right into it approximately three seconds after the invitation opens.
 - **View invite** bypasses the game, and **Replay** starts a new run. Reaching the invitation does not automatically reset progress.
 - Reduced-motion preferences shorten camera movement and transitions and remove flashing. The page supplies readable HTML invitation details and useful fallback content when WebGL cannot start or its context is lost.
-- Sound is enabled by default; **Mute** stops it. The audio engine is initialized when the experience loads, and browser autoplay rules gate playback until a sound-capable gesture such as entering or tapping the scene. Rain plays outside, then fades into shop music. Pickups, drops, dough taps, the door bell, invitation whoosh, and pizza-arrival ding follow actual game events. Playback pauses in background tabs.
+- Sound is enabled by default; **Mute** stops it. The audio engine attempts playback when the experience loads. Browsers that block autoplay start it after a sound-capable gesture such as entering or tapping the scene. Rain plays outside, then fades into shop music. Pickups, drops, dough taps, the door bell, invitation whoosh, and pizza-arrival ding follow actual game events. Playback pauses in background tabs.
 
 ## Sound effects and music
 
@@ -47,7 +47,7 @@ The project includes **12 original synthesized WAV placeholders**, including rai
 
 To use your own audio, drop matching MP3 files into **`src/assets/audio/`**, alongside its README. For example, `rain.mp3` replaces the outside ambience, and `shop-music.mp3` replaces the background music. Vite automatically selects replacements at build time and preserves generated fallbacks for any sounds you have not supplied. Refresh/restart development or rebuild/redeploy GitHub Pages after adding files. See the [complete filename list and replacement guide](src/assets/audio/README.md).
 
-Mix levels live in `src/app/Config.ts` under `audio`. The generated pack can be recreated with `python3 scripts/generate-audio.py`. The audio graph is initialized at startup, while audio files remain lazy: nothing is downloaded or decoded until the first user gesture starts playback. Native gain automation crossfades the two streaming ambience/music elements; short effects are cached with at most six simultaneous voices. Muting and hiding the page pause playback while leaving the engine initialized. No separate JavaScript audio animation loop runs.
+Mix levels live in `src/app/Config.ts` under `audio`. The generated pack can be recreated with `python3 scripts/generate-audio.py`. The audio graph is initialized at startup, while audio files remain lazy: nothing is downloaded or decoded until autoplay succeeds or the first user gesture starts playback. Native gain automation crossfades the two streaming ambience/music elements; short effects are cached with at most six simultaneous voices. Muting and hiding the page pause playback while leaving the engine initialized. No separate JavaScript audio animation loop runs.
 
 The activation behavior follows [browser autoplay rules](https://developer.chrome.com/blog/autoplay), and replacement discovery uses [Vite's file-glob imports](https://vite.dev/guide/features.html#glob-import). Optional files are not probed over the network, so absent MP3s do not generate 404s.
 
@@ -59,7 +59,7 @@ Change `src/app/Config.ts`:
 | --- | --- |
 | `title`, `date`, `dateShort`, `time` | Event content shown in the invitation and accessible UI |
 | `calendarDate` | ISO date used to generate and circle the wall calendar; update with display date |
-| `venue` | Optional venue; empty means it is omitted |
+| `venue` | Optional venue; leave empty to omit it from the invite |
 | `rsvpUrl` | Optional real external RSVP destination; empty means no working RSVP link is advertised |
 | `entranceDuration`, `bakeDuration` | Camera/game transition timing in seconds |
 | `inviteFadeOutDuration`, `inviteFadeInDuration` | White fade timing in seconds |

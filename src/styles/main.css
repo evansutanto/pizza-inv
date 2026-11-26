@@ -26,6 +26,10 @@ body[data-phase="invitation"] .scene-footer .view-invite{visibility:hidden}
 body[data-phase="invitation"] .motion-button{border-color:#92352155}
 body[data-phase="kitchen"] .prep-caption{top:129px}
 .ticket-heading p{font:500 14px/1.45 var(--font-sans);letter-spacing:0}
+.invite-question{font-weight:700!important;color:var(--red)}
+.invite-address-note{margin-top:3px!important;font-size:12px!important;line-height:1.4!important;letter-spacing:0!important}
+.fallback-question{margin:8px 0 2px;font-weight:700;color:var(--red)}
+.fallback-address-note{margin:0 0 14px;font-size:13px;line-height:1.5;max-width:320px}
 @media(min-width:481px) and (max-width:800px){body[data-phase="kitchen"] .prep-caption{top:119px}.prep-caption .eyebrow{display:none}.prep-caption h1{font-size:25px}}
 @media(max-width:480px){body[data-phase="kitchen"] .prep-caption{top:151px}.ticket-heading p{font-size:14px;max-width:270px}.ticket-heading p span{display:inline-block;margin-left:8px}.ticket-star{display:none}.ticket-heading strong{font-size:27px}.invitation-title h1{font-size:29px}.invite-ticket{padding:14px 13px 10px}.ticket-heading{display:block;text-align:center}}
 @media(max-height:600px) and (min-aspect-ratio:1/1){body[data-phase="kitchen"] .prep-caption{top:76px}.ticket-heading p{font-size:12px}}
