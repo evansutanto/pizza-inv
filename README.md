@@ -78,7 +78,7 @@ The stack is vanilla **Three.js + TypeScript + Vite**, with one WebGL canvas and
 | `src/engine/` | Camera, reusable primitives, resource disposal, quality, frame measurements |
 | `src/scenes/ExteriorScene.ts` | Physical facade, recessed opening door, street and connected shop |
 | `src/scenes/KitchenScene.ts` and `src/gameplay/` | Modeled ingredients, deterministic game state and pointer interaction |
-| `src/scenes/InvitationScene.ts` | CRT, editable screen texture, books, calendar, open pizza box and delayed pizza |
+| `src/scenes/InvitationScene.ts` | CRT, editable screen texture, calendar, open pizza box and delayed pizza |
 | `src/ui/` and `src/styles/` | Crisp responsive HTML controls, accessible text, performance panel |
 | `tests/` | State/measurement tests and browser acceptance checks |
 

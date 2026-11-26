@@ -57,27 +57,9 @@ export function createInvitation() {
   box(group,[16,.27,7],[0,.3,1.4],material('#ffffff',{map:wood,roughness:.67}));
   box(group,[16,.07,.09],[0,.46,4.85],material('#e4b97c'));
 
-  // Keep the TV and its support in one assembly so responsive scaling cannot
-  // drive the casing through the books or leave the stack floating.
-  const tvStand = new THREE.Group();tvStand.position.set(-1.65,.435,.15);group.add(tvStand);
-  const tv = new THREE.Group();tv.position.set(0,2.95,0);tv.rotation.y=.04;tvStand.add(tv);
-  // Three independent books, with visible paper leaves and printed spines.
-  const books = new THREE.Group();tvStand.add(books);
-  const paperTexture=canvasTexture(256,128,(ctx,w,h)=>{
-    ctx.fillStyle='#e9dbba';ctx.fillRect(0,0,w,h);ctx.fillStyle='#b8a885';
-    for(let y=6;y<h;y+=7)ctx.fillRect(0,y,w,1);
-  });
-  const paper=material('#ffffff',{map:paperTexture,roughness:.95});
-  const bookColors=['#293e3b','#d5a442','#a92f20'];
-  for(let i=0;i<3;i++){
-    const book=new THREE.Group();book.position.y=.15+i*.3;book.rotation.y=[-.05,.055,-.025][i];books.add(book);
-    const bw=[5.25,5.0,4.7][i],bd=[2.6,2.75,2.5][i];
-    const cover=material(bookColors[i]);
-    box(book,[bw,.03,bd],[0,-.135,0],cover);box(book,[bw,.03,bd],[0,.135,0],cover);
-    box(book,[bw-.13,.24,bd-.13],[0,0,0],paper);
-    box(book,[bw,.24,.07],[0,0,bd/2-.02],cover);
-    label(book,['NEW YORK • AFTER HOURS','THE ART OF DOING NOTHING','A VERY GOOD NIGHT'][i],bw-.35,.11,[0,0,bd/2+.022],{color:i===1?'#51371c':'#f1d8a2'});
-  }
+  // Anchor the TV's feet directly on the tabletop at every responsive scale.
+  const tvAssembly = new THREE.Group();tvAssembly.position.set(-1.65,.435,.15);group.add(tvAssembly);
+  const tv = new THREE.Group();tv.position.set(0,2.05,0);tv.rotation.y=.04;tvAssembly.add(tv);
   // Deep rounded plastic enclosure, vents and physical controls.
   rounded(tv,5.5,3.65,2.0,.32,plastic,[0,0,-.2]);
   rounded(tv,5.1,3.29,.14,.26,material('#dc5934',{roughness:.4}),[0,0,.88]);
@@ -171,11 +153,11 @@ export function createInvitation() {
   const framingBounds=[new THREE.Box3(),new THREE.Box3(),new THREE.Box3()];
   function layout(portrait:boolean){
     if(portrait){
-      tvStand.position.set(-.95,.435,.1);tvStand.scale.setScalar(.8);
+      tvAssembly.position.set(-.95,.435,.1);tvAssembly.scale.setScalar(.8);
       pizzaBox.position.set(2.65,.54,2);pizzaBox.scale.setScalar(.66);
       calendar.position.set(2.7,5.1,-1.97);calendar.scale.setScalar(.72);
     }else{
-      tvStand.position.set(-1.65,.435,.15);tvStand.scale.setScalar(1);
+      tvAssembly.position.set(-1.65,.435,.15);tvAssembly.scale.setScalar(1);
       pizzaBox.position.set(3.35,.54,1.65);pizzaBox.scale.setScalar(1);
       calendar.position.set(3.5,4.35,-1.97);calendar.scale.setScalar(1);
     }
@@ -183,7 +165,7 @@ export function createInvitation() {
     pizzaBox.position.y=.435+.01*pizzaBox.scale.y;
     napkin.visible=shaker.visible=!portrait;
     group.updateMatrixWorld(true);
-    framingBounds[0].setFromObject(tvStand);
+    framingBounds[0].setFromObject(tvAssembly);
     framingBounds[1].setFromObject(boxBody);
     framingBounds[2].setFromObject(calendar);
   }
