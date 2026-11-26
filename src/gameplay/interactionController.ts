@@ -92,6 +92,7 @@ export class InteractionController {
       if (this.raycaster.ray.intersectPlane(this.plane, this.projected)) this.offset.copy(this.source).sub(this.projected);
     }
     this.canvas.setPointerCapture(event.pointerId);
+    if (ingredient) this.canvas.dispatchEvent(new CustomEvent('ingredient-picked',{detail:ingredient}));
   }
 
   private pointerMove(event: PointerEvent) {

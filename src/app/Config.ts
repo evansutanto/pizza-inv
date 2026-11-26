@@ -14,6 +14,14 @@ export const CONFIG = {
   invitationPizzaDuration: 1.5,
   reducedTransitionDuration: 0.16,
   kitchenCenter: { x: 0, y: 1, z: -8 },
+  audio: {
+    masterVolume: .65,
+    effectsVolume: .7,
+    rainVolume: .24,
+    musicVolume: .18,
+    crossfadeSeconds: 1.1,
+    maxVoices: 6,
+  },
 } as const;
 
 export type ExperiencePhase = 'loading' | 'exterior' | 'entering' | 'kitchen' | 'baking' | 'invitation' | 'fallback';

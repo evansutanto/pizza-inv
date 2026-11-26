@@ -41,3 +41,8 @@ body[data-phase="kitchen"] .prep-caption{top:129px}
 .drag-hint-shadow{stroke:#643a25;stroke-width:5;opacity:.55}
 .drag-hint-source{opacity:.9}.drag-hint-drop{stroke-width:3}
 .step-info h2{margin-top:0}
+.experience-controls{display:flex;align-items:center;gap:10px;pointer-events:auto}
+.sound-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:0 11px;border:1px solid #ffffff30;border-radius:3px;background:none;color:inherit;font:9px monospace;letter-spacing:.05em;white-space:nowrap;pointer-events:auto}
+.sound-button svg{width:16px;height:16px}.sound-button[aria-pressed=true]{color:var(--orange);border-color:var(--orange)}
+body[data-phase=invitation] .sound-button{border-color:#92352155}
+@media(max-width:800px){.experience-controls{gap:7px}.sound-button{font-size:8px;padding:0 8px;gap:5px}.sound-button svg{width:14px;height:14px}}

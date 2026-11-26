@@ -13,6 +13,7 @@ import {PizzaStateMachine, type IngredientId, type PizzaSnapshot} from '../gamep
 import {InteractionController} from '../gameplay/interactionController';
 import {Overlays} from '../ui/overlays';
 import {PerfPanel} from '../ui/perfPanel';
+import {Soundscape} from '../engine/Soundscape';
 
 export class ExperienceController {
   private state=new ExperienceState();
@@ -45,8 +46,12 @@ export class ExperienceController {
   private readonly hintSource=new THREE.Vector3();
   private readonly hintTarget=new THREE.Vector3();
   private readonly hintEdge=new THREE.Vector3();
+  private sound:Soundscape;
+  private lastPizza:PizzaSnapshot={state:'move',taps:0};
+  private bakeWhooshPlayed=false;
+  private ovenDonePlayed=false;
 
-  constructor(private ui:Overlays){}
+  constructor(private ui:Overlays){this.sound=new Soundscape(enabled=>this.ui.soundState(enabled));}
 
   initialize() {
     if(this.disposed)return;
@@ -100,10 +105,15 @@ export class ExperienceController {
     this.ui.replay.addEventListener('click',()=>this.replay(),options);
     this.ui.inviteLinks.forEach(button=>button.addEventListener('click',()=>this.openInvitation(),options));
     this.ui.reduced.addEventListener('click',()=>{this.reducedMotion=!this.reducedMotion;this.ui.motion(this.reducedMotion);},options);
+    this.ui.sound.addEventListener('click',()=>this.sound.toggle(),options);
     this.media.addEventListener('change',event=>{this.reducedMotion=event.matches;this.ui.motion(this.reducedMotion);},options);
     window.addEventListener('resize',()=>this.resize(),options);
     window.visualViewport?.addEventListener('resize',()=>this.resize(),options);
-    this.ui.canvas.addEventListener('pointerdown',()=>{this.pointerDown=true;this.ui.doughDragHint.hide();},options);
+    this.ui.canvas.addEventListener('pointerdown',()=>{this.pointerDown=true;this.ui.doughDragHint.hide();this.sound.unlock();},options);
+    this.ui.canvas.addEventListener('ingredient-picked',event=>{
+      const ingredient=(event as CustomEvent<IngredientId>).detail;
+      this.sound.play(({dough:'doughPickup',sauce:'saucePickup',cheese:'cheesePickup'} as const)[ingredient]);
+    },options);
     this.ui.canvas.addEventListener('ingredient-selected',event=>{
       const ingredient=(event as CustomEvent<IngredientId>).detail;
       this.ui.hint(`${ingredient==='sauce'?'TOMATO SAUCE':ingredient.toUpperCase()} SELECTED. TAP THE BOARD.`);
@@ -119,14 +129,19 @@ export class ExperienceController {
 
   private enter(){
     if(!this.state.enter())return;
+    this.sound.unlock();this.sound.play('bell');
     this.rig.resetFov();this.phaseStart=performance.now();this.setPhase();
   }
   private bake(){
     if(!this.state.bake(this.machine.state==='ready'))return;
+    this.sound.unlock();this.bakeWhooshPlayed=false;
     this.interactions?.setEnabled(false);this.phaseStart=performance.now();this.setPhase();
   }
   private openInvitation(){
     if(this.state.phase==='invitation'||this.state.phase==='fallback')return;
+    this.sound.unlock();
+    if(this.state.phase!=='baking')this.sound.play('whoosh');
+    this.ovenDonePlayed=false;
     this.state.invite();this.phaseStart=performance.now();this.invitationElapsed=0;
     this.invitationPresented=false;
     this.invitation.reset();this.rig.invitation();this.interactions?.setEnabled(false);this.ui.flash(false);this.setPhase();
@@ -134,18 +149,29 @@ export class ExperienceController {
   private replay(){
     if(!this.state.replay())return;
     this.machine.reset();this.kitchen.reset();this.invitation.reset();this.exterior.setDoorOpen(0);
+    this.lastPizza=this.machine.snapshot;
     this.rig.resetFov();this.rig.exterior(0,this.reducedMotion);this.ui.pizza(this.machine.snapshot);
     this.setPhase();this.ui.enter.focus({preventScroll:true});
   }
   private setPhase(){
     this.ui.phase(this.state.phase);this.monitor.resetWindow();
+    this.sound.setPhase(this.state.phase);
     if(this.state.phase!=='exterior'&&this.state.phase!=='entering')this.exterior.update(0,this.quality.applied,false);
     this.previousRender=0;
     if(this.state.phase==='kitchen'){this.ui.pizza(this.machine.snapshot);this.interactions?.setEnabled(true);this.layoutDoughHint();}
   }
-  private pizzaChanged(snapshot:PizzaSnapshot){this.activityUntil=performance.now()+900;this.ui.hint();this.ui.pizza(snapshot);}
+  private pizzaChanged(snapshot:PizzaSnapshot){
+    const previous=this.lastPizza;
+    if(snapshot.taps>previous.taps)this.sound.play('doughHit');
+    else if(previous.state==='move'&&snapshot.state==='flatten')this.sound.play('doughDrop');
+    else if(previous.state==='sauce'&&snapshot.state==='cheese')this.sound.play('sauceDrop');
+    else if(previous.state==='cheese'&&snapshot.state==='ready')this.sound.play('cheeseDrop');
+    this.lastPizza=snapshot;
+    this.activityUntil=performance.now()+900;this.ui.hint();this.ui.pizza(snapshot);
+  }
   private stepAction(){
     if(this.state.phase!=='kitchen')return;
+    this.sound.unlock();
     this.interactions?.cancel();
     this.ui.hint();
     let accepted=false;
@@ -182,6 +208,7 @@ export class ExperienceController {
   }
 
   private visibility(){
+    this.sound.setHidden(document.hidden);
     if(document.hidden){this.hiddenAt=performance.now();cancelAnimationFrame(this.animationFrame);this.previousRender=0;}
     else if(this.state.phase!=='fallback'&&!this.disposed){
       if(this.hiddenAt)this.phaseStart+=performance.now()-this.hiddenAt;
@@ -213,11 +240,13 @@ export class ExperienceController {
     if(phase==='baking'){
       const progress=Math.min(1,elapsed/(this.reducedMotion?.25:CONFIG.bakeDuration));
       this.kitchen.bake(progress);this.ui.flash(!this.reducedMotion&&progress>.72);
+      if(progress>.65&&!this.bakeWhooshPlayed){this.bakeWhooshPlayed=true;this.sound.play('whoosh');}
       if(progress>=1)this.openInvitation();
     }
     if(this.state.phase==='invitation'){
       this.invitationElapsed=this.invitationPresented?(now-this.phaseStart)/1000:0;
       this.invitation.update(this.invitationElapsed,this.reducedMotion);
+      if(this.invitation.pizzaSettled&&!this.ovenDonePlayed){this.ovenDonePlayed=true;this.sound.play('ovenDone');}
     }else if(this.state.phase==='exterior'||this.state.phase==='entering'){
       this.exterior.update(now/1000,this.quality.applied,!this.reducedMotion);
     }
@@ -247,6 +276,7 @@ export class ExperienceController {
       get kitchenPizzaX(){return self.kitchen.pizza.position.x;},
       get reducedMotion(){return self.reducedMotion;},
       get atmosphere(){return self.exterior.atmosphere;},
+      get audio(){return self.sound.diagnostics;},
       get invitation(){return {pizzaStarted:self.invitation.pizzaStarted,pizzaSettled:self.invitation.pizzaSettled,pizzaX:self.invitation.pizza.position.x,elapsed:self.invitationElapsed};},
       get benchmark(){return self.monitor.snapshot();},
       project(id:IngredientId|'target'){
@@ -269,6 +299,7 @@ export class ExperienceController {
   }
   dispose(){
     if(this.disposed)return;this.disposed=true;cancelAnimationFrame(this.animationFrame);clearTimeout(this.warmupTimer);this.abort.abort();this.interactions?.dispose();this.panel?.dispose();
+    this.sound.dispose();
     disposeTree(this.world);if(this.invitation)disposeTree(this.invitation.scene);this.renderer?.dispose();
     THREE.DefaultLoadingManager.onError=()=>{};
   }

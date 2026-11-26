@@ -12,6 +12,7 @@ export class Overlays {
   readonly replay:HTMLButtonElement;
   readonly inviteLinks:NodeListOf<HTMLButtonElement>;
   readonly reduced:HTMLButtonElement;
+  readonly sound:HTMLButtonElement;
   readonly doughDragHint:DoughDragHint;
   private root:HTMLElement;
   private live:HTMLElement;
@@ -30,19 +31,17 @@ export class Overlays {
       </header>
       <section class="loading-panel" aria-label="Loading"><div class="loading-slice">${sliceIcon}</div><p>Warming up the kitchen</p><span class="loading-line"></span></section>
       <section class="welcome-panel" aria-label="Welcome" hidden>
-        <h1>Good company.<br><em>Better pizza.</em></h1>
         <button class="button button-orange" id="enter">TAP TO ENTER <span aria-hidden="true">+</span></button>
       </section>
       <section class="kitchen-panel" aria-label="Pizza preparation" hidden>
         <div class="prep-caption"><span class="eyebrow">FRESH FROM YOUR HANDS</span><h1>Make a little magic.</h1></div>
         <div class="prep-instruction"><div class="step-info"><h2 id="instruction">Drag the dough onto the board.</h2><span class="tap-progress" aria-label="Flattening progress"></span></div><button class="button button-red" id="step-action">Place the dough</button><button class="button button-red" id="bake" disabled hidden>CLICK TO BAKE <span aria-hidden="true">+</span></button></div>
-        <p class="interaction-hint">DRAG, TAP AN INGREDIENT + THE BOARD, OR USE THE BUTTON.</p>
       </section>
       <section class="invitation-panel" aria-label="Invitation" hidden>
         <div class="invite-ticket"><div class="ticket-heading"><span class="ticket-star" aria-hidden="true">✦</span><div><strong>MIKE’S PIZZA PARTY</strong><p>${CONFIG.date.toUpperCase()}<span> ${CONFIG.time}</span></p><p class="venue-line"></p></div></div><div class="ticket-actions"><a class="button button-red rsvp" hidden>Save me a slice</a><button class="text-button" id="replay">Replay experience</button></div></div>
       </section>
       <section class="fallback-panel" aria-label="Invitation fallback" hidden><span class="eyebrow">YOU’RE INVITED</span><h1>Mike’s<br><em>Pizza Party.</em></h1><p class="fallback-date">${CONFIG.date}<br><strong>${CONFIG.time}</strong></p><p class="fallback-venue"></p><p class="fallback-reason">The 3D kitchen is taking a break. The party is still on.</p><a class="button button-red fallback-rsvp" hidden>Save me a slice</a><button class="text-button" id="retry">Try 3D again</button></section>
-      <footer class="scene-footer"><button class="text-button view-invite">View invitation</button><span class="footer-label">MADE WITH DOUGH & GOOD INTENTIONS</span><button class="motion-button" aria-label="Reduce motion" aria-pressed="false">LESS MOTION</button></footer>
+      <footer class="scene-footer"><button class="text-button view-invite">View invitation</button><div class="experience-controls"><button class="sound-button" type="button" aria-label="Enable sound" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5Z" stroke-linejoin="round"/><path d="M15 8a6 6 0 0 1 0 8M18 5a10 10 0 0 1 0 14" stroke-linecap="round"/></svg><span>SOUND ON</span></button><button class="motion-button" aria-label="Reduce motion" aria-pressed="false">LESS MOTION</button></div></footer>
       <p class="sr-only live-instruction" aria-live="polite" aria-atomic="true"></p>
     `;
     parent.append(this.root);
@@ -50,6 +49,7 @@ export class Overlays {
     this.enter=this.root.querySelector('#enter')!;this.action=this.root.querySelector('#step-action')!;
     this.bake=this.root.querySelector('#bake')!;this.replay=this.root.querySelector('#replay')!;
     this.inviteLinks=this.root.querySelectorAll('.view-invite');this.reduced=this.root.querySelector('.motion-button')!;
+    this.sound=this.root.querySelector('.sound-button')!;
     this.live=this.root.querySelector('.live-instruction')!;this.instruction=this.root.querySelector('#instruction')!;
     this.taps=this.root.querySelector('.tap-progress')!;
     this.doughDragHint=new DoughDragHint(this.root);
@@ -89,8 +89,9 @@ export class Overlays {
   }
 
   motion(reduced:boolean){this.reduced.setAttribute('aria-pressed',String(reduced));document.body.classList.toggle('reduced-motion',reduced);}
+  soundState(enabled:boolean){this.sound.setAttribute('aria-pressed',String(enabled));this.sound.setAttribute('aria-label',enabled?'Mute sound':'Enable sound');this.sound.querySelector('span')!.textContent=enabled?'MUTE':'SOUND ON';}
   announce(message:string){this.live.textContent=message;}
-  hint(message?:string){this.root.querySelector('.interaction-hint')!.textContent=message||'DRAG, TAP AN INGREDIENT + THE BOARD, OR USE THE BUTTON.';if(message)this.announce(message);}
+  hint(message?:string){if(message)this.announce(message);}
   flash(active:boolean){this.root.classList.toggle('is-transitioning',active);}
   dispose(){this.root.remove();}
 }

@@ -38,7 +38,18 @@ Playwright needs its browser binary installed. Browser tests are local checks; G
 - Bake unlocks only when the pizza is complete. The pizza moves right, then a short CRT transition reveals the invitation.
 - The open invitation box begins empty. A separate pizza model starts moving left-to-right into it approximately three seconds after the invitation opens.
 - **View invite** bypasses the game, and **Replay** starts a new run. Reaching the invitation does not automatically reset progress.
-- Reduced-motion preferences shorten camera movement and transitions and remove flashing. The page supplies readable HTML invitation details and useful fallback content when WebGL cannot start or its context is lost. Audio is not used.
+- Reduced-motion preferences shorten camera movement and transitions and remove flashing. The page supplies readable HTML invitation details and useful fallback content when WebGL cannot start or its context is lost.
+- **Sound On** enables the optional soundscape; **Mute** stops it. Rain plays outside, then fades into shop music. Pickups, drops, dough taps, the door bell, invitation whoosh, and pizza-arrival ding follow actual game events. Sound starts only after explicit activation and pauses in background tabs.
+
+## Sound effects and music
+
+The project includes **12 original synthesized WAV placeholders**, including rain ambience and an original quiet 24-second electric-piano/bass/brushes music loop. The rain is synthesized, not an NYC field recording. No external samples, music services, runtime APIs or additional dependencies are used.
+
+To use your own audio, drop matching MP3 files into **`src/assets/audio/`**, alongside its README. For example, `rain.mp3` replaces the outside ambience, and `shop-music.mp3` replaces the background music. Vite automatically selects replacements at build time and preserves generated fallbacks for any sounds you have not supplied. Refresh/restart development or rebuild/redeploy GitHub Pages after adding files. See the [complete filename list and replacement guide](src/assets/audio/README.md).
+
+Mix levels live in `src/app/Config.ts` under `audio`. The generated pack can be recreated with `python3 scripts/generate-audio.py`. Audio payloads are lazy: nothing is downloaded/decoded until Sound On is selected. Native gain automation crossfades the two streaming ambience/music elements; short effects are cached with at most six simultaneous voices. Muting and hiding the page stop playback and suspend the audio context. No separate JavaScript audio animation loop runs.
+
+The activation behavior follows [browser autoplay rules](https://developer.chrome.com/blog/autoplay), and replacement discovery uses [Vite's file-glob imports](https://vite.dev/guide/features.html#glob-import). Optional files are not probed over the network, so absent MP3s do not generate 404s.
 
 ## Edit the invitation
 
@@ -130,11 +141,13 @@ Only set **CUSTOM_DOMAIN** after supplying a domain you control and configuring 
 Verified on 25 November 2026:
 
 - `npm test`: **16 tests passed** across ordered game state, transition guards, physical doorway camera clearance, responsive worktop framing, rolling measurements and adaptive quality hysteresis.
-- `npm run build`: TypeScript check and static production build passed. Main JavaScript is approximately **650 kB / 170 kB gzip**, CSS approximately **16 kB / 4 kB gzip**, plus the local **12 kB** font. Source maps are separate and are not requested at runtime.
+- `npm run build`: TypeScript check and static production build passed. With audio controls, main JavaScript is approximately **662 kB / 173 kB gzip**, CSS approximately **17 kB / 4.5 kB gzip**, plus the local **12 kB** font. The **1.74 MiB** generated sound pack is requested only after audio activation. Source maps are separate and are not requested at runtime.
 - `npm run test:e2e`: **9 Chromium browser cases passed** in 1.7 minutes using software WebGL. They cover duplicate entry, vertical kitchen camera, actual captured touch dragging, invalid/out-of-order actions, exactly three flatten taps, visible sauce/cheese, guarded bake/rightward exit, initial empty box and delayed pizza, keyboard-only play, reduced motion, quality changes and JSON download, WebGL unsupported/context loss, procedural texture failure, and JavaScript-disabled fallback.
 - Following the hero atmosphere update, **16 unit tests**, the production build, and **3 browser checks** passed again: the complete journey, reduced motion, and the new rain/flicker test. The latter verifies quality-dependent streak counts, bounded brightness, advancing rain uniforms, stable geometry counts, and disabled atmosphere in the kitchen. Original acceptance results above describe the initial build; the latest browser report contains this focused rerun.
 - All three scenes were checked at **390×844, 360×800, 844×390, 768×1024, and 1440×900**. Ingredient centers remained within the canvas, primary controls were visible, and the document had no overflow. Landscape cards leave the dough and open pizza box visible.
 - Browser audit recorded **no console errors/exceptions, missing assets, or external runtime requests**. Screenshots and the HTML report are generated under `test-results/` and `playwright-report/`; selected screenshots are retained in `artifacts/`.
+
+Audio update verified on **26 November 2026** with a production build and one focused Chromium playthrough: no audio payloads/context before opt-in; outside rain playback; music after entry; door bell, all three ingredient pickup/drop pairs, exactly three dough hits, transition whoosh, arrival ding; and mute stopping playback. No console errors or missing audio files occurred. Generated PCM files were checked for non-silence and clipping. Physical iOS/Android audio behavior and subjective listening on the owner's speakers remain unverified. No new unit-test suite was added for this change.
 
 The additional `tests/production-check.mjs` **passed against both final production builds**: `/` and `/mikes-pizza-threejs-lab/`, including their local font paths, full button-driven recipe, delayed pizza and JavaScript-disabled fallback. It also rejected Three.js compatibility warnings; none occurred. It saved software-rendered benchmark reports and production screenshots in `artifacts/`. The empty-box delay starts after the first CRT render so initial shader work cannot shorten the visible pause. To repeat with previews already running:
 
